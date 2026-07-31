@@ -1,0 +1,39 @@
+debug: false
+
+spring:
+  application:
+    name: trippoint-backend
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/trippoint
+    username: trippoint
+    password: trippoint
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+    show-sql: false
+
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: false
+
+  jackson:
+    time-zone: Asia/Kolkata
+    default-property-inclusion: non_null
+
+  graphql:
+    graphiql:
+      enabled: true
+      path: /graphiql
+    web-socket:
+      path: /graphql/ws
+    path: /graphql
+
+server:
+  port: 8081
