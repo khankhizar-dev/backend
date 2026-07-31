@@ -4,12 +4,11 @@ import org.springframework.boot.CommandLineRunner
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
-import java.time.ZoneId
 import java.util.TimeZone
 import javax.sql.DataSource
 
 @SpringBootApplication
-open class BackendApplication
+class BackendApplication
 
 fun main(args: Array<String>) {
     TimeZone.setDefault(TimeZone.getTimeZone("UTC"))

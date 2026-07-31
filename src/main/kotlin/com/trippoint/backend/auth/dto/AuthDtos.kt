@@ -1,7 +1,5 @@
 package com.trippoint.backend.auth.dto
 
-import com.trippoint.backend.auth.dto.UserResponse
-
 data class AuthPayload(
     val user: UserResponse,
     val token: String,
