@@ -1,0 +1,7 @@
+# Use this workspace to collaborate
+workspace:
+  id: a782cc2f-9f44-4920-8384-ab44d3c9c094
+
+localResources:
+  specs:
+    - ../src/main/resources/graphql/auth.graphqls

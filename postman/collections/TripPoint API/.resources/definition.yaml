@@ -1,0 +1,8 @@
+$kind: collection
+name: TripPoint API
+description: GraphQL API collection for the TripPoint backend
+variables:
+  - key: baseUrl
+    value: 'http://localhost:8081'
+  - key: authToken
+    value: ''

@@ -69,4 +69,18 @@ class AuthService(
             )
         } ?: throw IllegalStateException("Failed to get user ID")
     }
+
+    fun me(userId: java.util.UUID): UserResponse {
+        val user = userRepository.findById(userId)
+            .orElseThrow {
+                IllegalArgumentException("User not found")
+            }
+
+        return UserResponse(
+            id = user.id!!,
+            email = user.email,
+            firstName = user.firstName,
+            lastName = user.lastName
+        )
+    }
 }

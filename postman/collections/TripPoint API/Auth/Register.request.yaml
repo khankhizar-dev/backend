@@ -1,0 +1,22 @@
+$kind: http-request
+name: Register
+method: POST
+url: '{{baseUrl}}/graphql'
+order: 1000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "query": "mutation Register($input: RegisterInput!) { register(input: $input) { user { id email firstName lastName } token refreshToken } }",
+      "variables": {
+        "input": {
+          "email": "user@example.com",
+          "password": "password123",
+          "firstName": "John",
+          "lastName": "Doe"
+        }
+      }
+    }
