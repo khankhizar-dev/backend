@@ -7,7 +7,6 @@ import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import kotlin.test.assertFalse
 
 @DisplayName("UserPrincipal Tests")
 class UserPrincipalTest {
