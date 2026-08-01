@@ -1,11 +1,12 @@
 package com.trippoint.backend.auth.graphql
 
 import com.trippoint.backend.auth.dto.UserResponse
+import com.trippoint.backend.auth.security.UserPrincipal
 import com.trippoint.backend.auth.service.AuthService
 import org.springframework.graphql.data.method.annotation.QueryMapping
+import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Controller
-import java.util.UUID
 
 @Controller
 class AuthQuery(
@@ -13,16 +14,13 @@ class AuthQuery(
 ) {
 
     @QueryMapping
-    fun me(): UserResponse {
-        val authentication = SecurityContextHolder.getContext().authentication
+    fun me(authentication: Authentication?): UserResponse {
+        val auth = authentication ?: SecurityContextHolder.getContext().authentication
             ?: throw IllegalArgumentException("User not authenticated")
 
-        val userId = try {
-            UUID.fromString(authentication.name)
-        } catch (e: IllegalArgumentException) {
-            throw IllegalArgumentException("Invalid user ID in token")
-        }
+        val principal = auth.principal as? UserPrincipal
+            ?: throw IllegalArgumentException("Invalid authentication principal")
 
-        return authService.me(userId)
+        return authService.me(principal.userId)
     }
 }
