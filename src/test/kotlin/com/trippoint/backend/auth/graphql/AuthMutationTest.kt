@@ -120,7 +120,7 @@ class AuthMutationTest {
         )
 
         whenever(authService.register(
-            com.trippoint.backend.auth.dto.RegisterRequest(
+            RegisterRequest(
                 email = testEmail,
                 password = testPassword,
                 firstName = testFirstName,
@@ -150,7 +150,7 @@ class AuthMutationTest {
         )
 
         whenever(authService.register(
-            com.trippoint.backend.auth.dto.RegisterRequest(
+            RegisterRequest(
                 email = "existing@example.com",
                 password = testPassword,
                 firstName = testFirstName,
@@ -184,7 +184,7 @@ class AuthMutationTest {
         )
 
         whenever(authService.register(
-            com.trippoint.backend.auth.dto.RegisterRequest(
+            RegisterRequest(
                 email = "mapping@example.com",
                 password = "Pass@123",
                 firstName = "Map",
