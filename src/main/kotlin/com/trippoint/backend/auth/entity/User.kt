@@ -39,6 +39,9 @@ class User(
     @Column(name = "updated_at")
     var updatedAt: OffsetDateTime = OffsetDateTime.now(),
 
+    @Column(name = "tokens_valid_after")
+    var tokensValidAfter: OffsetDateTime? = null,
+
     @Column(name = "deleted_at")
     var deletedAt: OffsetDateTime? = null
 )

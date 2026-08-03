@@ -8,4 +8,5 @@ interface RefreshTokenRepository :
     JpaRepository<RefreshToken, UUID> {
 
     fun findAllByUser_Id(userId: UUID): List<RefreshToken>
+    fun findAllByDevice_Id(deviceId: UUID): List<RefreshToken>
 }
