@@ -26,7 +26,6 @@ class AuthService(
     private val hashService: HashService,
     private val tokenBlacklistRepository: TokenBlacklistRepository? = null,
     private val userDeviceRepository: UserDeviceRepository? = null
-    private val hashService: HashService
 ) {
 
     fun register(request: RegisterRequest): AuthPayload {

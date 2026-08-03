@@ -10,4 +10,3 @@ interface RefreshTokenRepository :
     fun findAllByUser_Id(userId: UUID): List<RefreshToken>
     fun findAllByDevice_Id(deviceId: UUID): List<RefreshToken>
 }
-}
