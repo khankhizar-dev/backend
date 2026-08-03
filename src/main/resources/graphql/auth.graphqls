@@ -41,6 +41,22 @@ input RefreshTokenInput {
     refreshToken: String!
 }
 
+input VerifyEmailOtpInput {
+    email: String!
+    otp: String!
+}
+
+input VerifyPasswordResetOtpInput {
+    email: String!
+    otp: String!
+}
+
+input ResetPasswordInput {
+    email: String!
+    otp: String!
+    newPassword: String!
+}
+
 type RefreshTokenPayload {
     token: String!
     refreshToken: String!
@@ -51,4 +67,9 @@ extend type Mutation {
     logout: Boolean!
     logoutAllDevices: Boolean!
     changePassword(currentPassword: String!, newPassword: String!): Boolean!
+    verifyEmailOtp(input: VerifyEmailOtpInput!): Boolean!
+    resendEmailOtp: Boolean!
+    requestPasswordReset(email: String!): Boolean!
+    verifyPasswordResetOtp(input: VerifyPasswordResetOtpInput!): Boolean!
+    resetPassword(input: ResetPasswordInput!): Boolean!
 }

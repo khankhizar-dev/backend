@@ -16,6 +16,10 @@ data class LoginRequest(
 
 data class ChangePasswordRequest(val currentPassword: String, val newPassword: String)
 
+data class VerifyEmailOtpRequest(val email: String, val otp: String)
+data class VerifyPasswordResetOtpRequest(val email: String, val otp: String)
+data class ResetPasswordRequest(val email: String, val otp: String, val newPassword: String)
+
 data class UserDeviceResponse(
     val id: UUID,
     val deviceName: String?,

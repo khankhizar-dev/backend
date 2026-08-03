@@ -25,7 +25,8 @@ class AuthService(
     private val jwtService: JwtService,
     private val hashService: HashService,
     private val tokenBlacklistRepository: TokenBlacklistRepository? = null,
-    private val userDeviceRepository: UserDeviceRepository? = null
+    private val userDeviceRepository: UserDeviceRepository? = null,
+    private val emailOtpService: EmailOtpService? = null
 ) {
 
     fun register(request: RegisterRequest): AuthPayload {
@@ -41,6 +42,7 @@ class AuthService(
         )
 
         val saved = userRepository.save(user)
+        emailOtpService?.issueEmailVerificationOtp(saved)
 
         return saved.id?.let { userId ->
             val token = jwtService.generateToken(userId)
@@ -230,4 +232,19 @@ class AuthService(
                 it.lastLoginAt?.toString(), it.createdAt.toString()
             )
         }
+
+    fun resetPassword(email: String, otp: String, newPassword: String): Boolean {
+        require(newPassword.isNotBlank()) { "New password must not be blank" }
+        requireNotNull(emailOtpService) { "Email OTP is not configured" }.verifyPasswordResetOtp(email, otp)
+        val user = userRepository.findByEmail(email) ?: throw IllegalArgumentException("User not found")
+        val now = OffsetDateTime.now()
+        user.passwordHash = passwordService.encode(newPassword)
+        user.updatedAt = now
+        user.tokensValidAfter = now
+        userRepository.save(user)
+        val tokens = refreshTokenRepository.findAllByUser_Id(user.id!!).filter { it.revokedAt == null }
+        tokens.forEach { it.revokedAt = now }
+        refreshTokenRepository.saveAll(tokens)
+        return true
+    }
 }
