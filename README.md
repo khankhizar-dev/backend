@@ -132,10 +132,52 @@ The API uses JWT tokens for authentication. Implement the following flow:
 1. **Register User** - Create new user account
 2. **Login** - Authenticate and receive JWT token
 3. **Use Token** - Include token in Authorization header for protected queries/mutations
+4. **Refresh or end sessions** - Rotate refresh tokens, log out the current session, or invalidate every device session
 
 Example GraphQL request header:
 ```
 Authorization: Bearer <jwt-token>
+```
+
+### Session Management Operations
+
+All operations below except `refreshToken` require the `Authorization: Bearer <access-token>` header.
+
+```graphql
+# Rotate a refresh token
+mutation {
+  refreshToken(input: { refreshToken: "<refresh-token>" }) {
+    token
+    refreshToken
+  }
+}
+
+# Invalidate the current access token
+mutation {
+  logout
+}
+
+# Revoke refresh tokens and invalidate access tokens on every device
+mutation {
+  logoutAllDevices
+}
+
+# Verify the current password, change it, and invalidate every session
+mutation {
+  changePassword(currentPassword: "old-password", newPassword: "new-password")
+}
+
+# Show devices created by successful logins
+query {
+  userDevices {
+    id
+    deviceName
+    platform
+    appVersion
+    lastLoginAt
+    createdAt
+  }
+}
 ```
 
 ## 🔐 Authentication Module
@@ -146,6 +188,8 @@ The auth module provides:
 - **User Login**: Authenticate users and generate JWT tokens
 - **Token Management**: JWT token creation, validation, and refresh
 - **Password Security**: Bcrypt-based password hashing
+- **Session Security**: JWT blacklist for logout, refresh-token revocation, and session invalidation after password changes
+- **Device Visibility**: Login-device records available through `userDevices`
 
 ### Auth Services
 
@@ -153,6 +197,8 @@ The auth module provides:
 - `AuthService`: User authentication and registration logic
 - `PasswordService`: Password hashing and validation
 - `UserRepository`: Database access for user entities
+- `TokenBlacklistRepository`: Stores invalidated access-token IDs until their expiry
+- `UserDeviceRepository`: Stores user login-device records
 
 ## 📊 Database Schema
 
@@ -171,6 +217,10 @@ For production, configure Flyway migrations (currently disabled in config).
 ### ✅ Authentication & Security
 - User registration and login
 - JWT token generation and validation
+- Refresh-token rotation
+- Current-session logout and logout from all devices
+- Password change with session invalidation
+- User-device query
 - Password hashing with Bcrypt
 - Spring Security configuration
 - GraphQL mutations for auth endpoints
@@ -202,6 +252,13 @@ Run tests with:
 ```bash
 ./gradlew test
 ```
+
+Generate an HTML and XML JaCoCo coverage report with:
+```bash
+./gradlew test jacocoTestReport
+```
+
+Open `build/reports/jacoco/test/html/index.html` to inspect the report.
 
 The project includes:
 - JUnit 5 test framework
@@ -251,6 +308,9 @@ The project includes:
 
 # Run tests
 ./gradlew test
+
+# Run tests and generate the coverage report
+./gradlew test jacocoTestReport
 
 # Clean build
 ./gradlew clean build
