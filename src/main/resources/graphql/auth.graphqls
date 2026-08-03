@@ -26,3 +26,16 @@ type Mutation {
     register(input: RegisterInput!): AuthPayload!
     login(email: String!, password: String!): AuthPayload!
 }
+
+input RefreshTokenInput {
+    refreshToken: String!
+}
+
+type RefreshTokenPayload {
+    token: String!
+    refreshToken: String!
+}
+
+extend type Mutation {
+    refreshToken(input: RefreshTokenInput!): RefreshTokenPayload!
+}
