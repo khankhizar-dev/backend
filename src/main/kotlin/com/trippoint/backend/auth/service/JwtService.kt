@@ -74,4 +74,18 @@ class JwtService(
             null
         }
     }
+
+    fun isRefreshToken(token: String): Boolean {
+        return try {
+            val claims = Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .payload
+
+            claims["type"] == "refresh"
+        } catch (e: Exception) {
+            false
+        }
+    }
 }

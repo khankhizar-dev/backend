@@ -1,7 +1,9 @@
 package com.trippoint.backend.auth.service
 
 import com.trippoint.backend.auth.dto.RegisterRequest
+import com.trippoint.backend.auth.entity.RefreshToken
 import com.trippoint.backend.auth.entity.User
+import com.trippoint.backend.auth.repository.RefreshTokenRepository
 import com.trippoint.backend.auth.repository.UserRepository
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -9,6 +11,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
+import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import java.util.Optional
 import java.util.UUID
@@ -23,12 +26,18 @@ class AuthServiceLoginTest {
     private lateinit var userRepository: UserRepository
 
     @Mock
+    private lateinit var refreshTokenRepository: RefreshTokenRepository
+
+    @Mock
     private lateinit var passwordService: PasswordService
 
     @Mock
     private lateinit var jwtService: JwtService
 
     private lateinit var authService: AuthService
+
+    @Mock
+    lateinit var hashService: HashService
 
     private val testUserId = UUID.randomUUID()
     private val testEmail = "test@example.com"
@@ -40,7 +49,12 @@ class AuthServiceLoginTest {
     @BeforeEach
     fun setup() {
         MockitoAnnotations.openMocks(this)
-        authService = AuthService(userRepository, passwordService, jwtService)
+        authService = AuthService(userRepository, refreshTokenRepository, passwordService, jwtService, hashService)
+        whenever(hashService.sha256(any()))
+            .thenReturn("hashed-refresh-token")
+
+        whenever(refreshTokenRepository.save(any<RefreshToken>()))
+            .thenAnswer { it.getArgument<RefreshToken>(0) }
     }
 
     @Nested
@@ -73,6 +87,9 @@ class AuthServiceLoginTest {
 
             whenever(jwtService.generateRefreshToken(testUserId))
                 .thenReturn(testRefreshToken)
+
+            whenever(refreshTokenRepository.save(any<RefreshToken>()))
+                .thenAnswer { it.getArgument<RefreshToken>(0) }
 
             // Act
             val result = authService.login(testEmail, testPassword)
@@ -111,6 +128,9 @@ class AuthServiceLoginTest {
             whenever(jwtService.generateRefreshToken(testUserId))
                 .thenReturn("refreshToken")
 
+            whenever(refreshTokenRepository.save(any<RefreshToken>()))
+                .thenAnswer { it.getArgument<RefreshToken>(0) }
+
             // Act
             val result = authService.login(testEmail, testPassword)
 
@@ -147,6 +167,9 @@ class AuthServiceLoginTest {
 
             whenever(jwtService.generateRefreshToken(testUserId))
                 .thenReturn(refreshToken)
+
+            whenever(refreshTokenRepository.save(any<RefreshToken>()))
+                .thenAnswer { it.getArgument<RefreshToken>(0) }
 
             // Act
             val result = authService.login(testEmail, testPassword)

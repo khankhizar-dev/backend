@@ -9,14 +9,14 @@ import java.util.UUID
 class User(
 
     @Id
-    @GeneratedValue
-    val id: UUID? = null,
+    @GeneratedValue(strategy = GenerationType.UUID)
+    var id: UUID? = null,
 
     @Column(nullable = false, unique = true)
-    var email: String,
+    var email: String = "",
 
     @Column(name = "password_hash", nullable = false)
-    var passwordHash: String,
+    var passwordHash: String = "",
 
     @Column(name = "first_name")
     var firstName: String? = null,
