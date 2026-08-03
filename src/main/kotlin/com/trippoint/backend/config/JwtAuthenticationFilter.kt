@@ -38,7 +38,9 @@ class JwtAuthenticationFilter(
                     val user = userRepository.findById(userId)
                         .orElse(null)
 
-                    if (user != null && user.active) {
+                    val issuedAt = jwtService.getTokenIssuedAt(token)
+                    if (user != null && user.active &&
+                        (user.tokensValidAfter == null || issuedAt?.isAfter(user.tokensValidAfter) == true)) {
                         // Build UserPrincipal from database (not just JWT)
                         val principal = UserPrincipal(
                             userId = userId,

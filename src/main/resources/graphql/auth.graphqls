@@ -1,5 +1,6 @@
 type Query {
     me: User!
+    userDevices: [UserDevice!]!
 }
 
 type User {
@@ -7,6 +8,15 @@ type User {
     email: String!
     firstName: String
     lastName: String
+}
+
+type UserDevice {
+    id: ID!
+    deviceName: String
+    platform: String
+    appVersion: String
+    lastLoginAt: String
+    createdAt: String!
 }
 
 input RegisterInput {
@@ -38,4 +48,7 @@ type RefreshTokenPayload {
 
 extend type Mutation {
     refreshToken(input: RefreshTokenInput!): RefreshTokenPayload!
+    logout: Boolean!
+    logoutAllDevices: Boolean!
+    changePassword(currentPassword: String!, newPassword: String!): Boolean!
 }
