@@ -18,6 +18,9 @@ import com.trippoint.backend.auth.security.UserPrincipal
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
 import jakarta.servlet.http.HttpServletRequest
+import org.mockito.Mock
+import org.mockito.MockitoAnnotations
+import org.mockito.kotlin.whenever
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull

@@ -26,6 +26,7 @@ class AuthService(
     private val hashService: HashService,
     private val tokenBlacklistRepository: TokenBlacklistRepository? = null,
     private val userDeviceRepository: UserDeviceRepository? = null
+    private val hashService: HashService
 ) {
 
     fun register(request: RegisterRequest): AuthPayload {
@@ -89,6 +90,15 @@ class AuthService(
                 RefreshToken(
                     user = user,
                     device = device,
+                    tokenHash = hashService.sha256(refreshToken),
+                    expiresAt = OffsetDateTime.now().plusDays(7)
+                )
+            )
+
+            // Save refresh token
+            refreshTokenRepository.save(
+                RefreshToken(
+                    user = user,
                     tokenHash = hashService.sha256(refreshToken),
                     expiresAt = OffsetDateTime.now().plusDays(7)
                 )
