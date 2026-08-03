@@ -8,6 +8,16 @@ import com.trippoint.backend.auth.service.AuthService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.assertThrows
+import org.mockito.Mock
+import org.mockito.MockitoAnnotations
+import org.mockito.kotlin.whenever
+import org.mockito.kotlin.verify
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import com.trippoint.backend.auth.security.UserPrincipal
+import org.springframework.web.context.request.RequestContextHolder
+import org.springframework.web.context.request.ServletRequestAttributes
+import jakarta.servlet.http.HttpServletRequest
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import org.mockito.kotlin.whenever
@@ -256,5 +266,39 @@ class AuthMutationTest {
         assertTrue(result.token.contains("."), "Token should contain dots (JWT format)")
         val parts = result.token.split(".")
         assertEquals(3, parts.size, "JWT should have 3 parts (header.payload.signature)")
+    }
+
+    @Test
+    fun `session mutations delegate for an authenticated user`() {
+        val authentication = UsernamePasswordAuthenticationToken(UserPrincipal(testUserId, testEmail), null)
+        whenever(authService.logoutAllDevices(testUserId)).thenReturn(true)
+        whenever(authService.changePassword(testUserId, "old", "new")).thenReturn(true)
+
+        assertTrue(authMutation.logoutAllDevices(authentication))
+        assertTrue(authMutation.changePassword("old", "new", authentication))
+        verify(authService).logoutAllDevices(testUserId)
+        verify(authService).changePassword(testUserId, "old", "new")
+    }
+
+    @Test
+    fun `logout obtains bearer token from the servlet request`() {
+        val authentication = UsernamePasswordAuthenticationToken(UserPrincipal(testUserId, testEmail), null)
+        val request = org.mockito.Mockito.mock(HttpServletRequest::class.java)
+        val attributes = org.mockito.Mockito.mock(ServletRequestAttributes::class.java)
+        whenever(attributes.request).thenReturn(request)
+        whenever(request.getHeader("Authorization")).thenReturn("Bearer access-token")
+        whenever(authService.logout("access-token", testUserId)).thenReturn(true)
+        RequestContextHolder.setRequestAttributes(attributes)
+
+        assertTrue(authMutation.logout(authentication))
+        verify(authService).logout("access-token", testUserId)
+        RequestContextHolder.resetRequestAttributes()
+    }
+
+    @Test
+    fun `session mutations reject unauthenticated requests`() {
+        assertThrows<IllegalArgumentException> { authMutation.logoutAllDevices(null) }
+        assertThrows<IllegalArgumentException> { authMutation.changePassword("old", "new", null) }
+        assertThrows<IllegalArgumentException> { authMutation.logout(null) }
     }
 }

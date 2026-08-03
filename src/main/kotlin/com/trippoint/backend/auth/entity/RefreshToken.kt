@@ -16,6 +16,10 @@ class RefreshToken(
     @JoinColumn(name = "user_id", nullable = false)
     var user: User? = null,
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "device_id")
+    var device: UserDevice? = null,
+
     @Column(name = "token_hash", nullable = false)
     var tokenHash: String = "",
 
@@ -27,4 +31,5 @@ class RefreshToken(
 
     @Column(name = "revoked_at")
     var revokedAt: OffsetDateTime? = null
+)
 )

@@ -2,11 +2,14 @@ package com.trippoint.backend.auth.service
 
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
+import com.trippoint.backend.auth.repository.TokenBlacklistRepository
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.nio.charset.StandardCharsets
 import java.util.Date
 import java.util.UUID
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import javax.crypto.SecretKey
 
 @Service
@@ -18,7 +21,9 @@ class JwtService(
     private val expiration: Long,
 
     @Value("\${jwt.refresh-expiration:604800000}")
-    private val refreshExpiration: Long
+    private val refreshExpiration: Long,
+
+    private val tokenBlacklistRepository: TokenBlacklistRepository? = null
 ) {
 
     private val key: SecretKey by lazy {
@@ -31,6 +36,7 @@ class JwtService(
 
         return Jwts.builder()
             .subject(userId.toString())
+            .id(UUID.randomUUID().toString())
             .issuedAt(now)
             .expiration(expiryDate)
             .signWith(key)
@@ -43,6 +49,7 @@ class JwtService(
 
         return Jwts.builder()
             .subject(userId.toString())
+            .id(UUID.randomUUID().toString())
             .issuedAt(now)
             .expiration(expiryDate)
             .claim("type", "refresh")
@@ -52,11 +59,12 @@ class JwtService(
 
     fun validateToken(token: String): Boolean {
         return try {
-            Jwts.parser()
+            val tokenClaims = Jwts.parser()
                 .verifyWith(key)
                 .build()
                 .parseSignedClaims(token)
-            true
+                .payload
+            !isTokenIdBlacklisted(tokenClaims.id)
         } catch (e: Exception) {
             false
         }
@@ -87,5 +95,24 @@ class JwtService(
         } catch (e: Exception) {
             false
         }
+    }
+
+    fun getTokenId(token: String): String? = claims(token)?.id
+
+    fun getTokenExpiration(token: String): OffsetDateTime? =
+        claims(token)?.expiration?.toInstant()?.atOffset(ZoneOffset.UTC)
+
+    fun getTokenIssuedAt(token: String): OffsetDateTime? =
+        claims(token)?.issuedAt?.toInstant()?.atOffset(ZoneOffset.UTC)
+
+    fun isTokenBlacklisted(token: String): Boolean = isTokenIdBlacklisted(getTokenId(token))
+
+    private fun isTokenIdBlacklisted(tokenId: String?): Boolean =
+        tokenId != null && tokenBlacklistRepository?.existsByTokenId(tokenId) == true
+
+    private fun claims(token: String) = try {
+        Jwts.parser().verifyWith(key).build().parseSignedClaims(token).payload
+    } catch (_: Exception) {
+        null
     }
 }

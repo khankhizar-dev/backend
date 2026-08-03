@@ -5,10 +5,15 @@ import com.trippoint.backend.auth.dto.UserResponse
 import com.trippoint.backend.auth.dto.AuthPayload
 import com.trippoint.backend.auth.dto.RefreshTokenRequest
 import com.trippoint.backend.auth.dto.RefreshTokenResponse
+import com.trippoint.backend.auth.dto.UserDeviceResponse
 import com.trippoint.backend.auth.entity.RefreshToken
 import com.trippoint.backend.auth.entity.User
 import com.trippoint.backend.auth.repository.RefreshTokenRepository
 import com.trippoint.backend.auth.repository.UserRepository
+import com.trippoint.backend.auth.repository.TokenBlacklistRepository
+import com.trippoint.backend.auth.repository.UserDeviceRepository
+import com.trippoint.backend.auth.entity.TokenBlacklist
+import com.trippoint.backend.auth.entity.UserDevice
 import org.springframework.stereotype.Service
 import java.time.OffsetDateTime
 
@@ -18,6 +23,9 @@ class AuthService(
     private val refreshTokenRepository: RefreshTokenRepository,
     private val passwordService: PasswordService,
     private val jwtService: JwtService,
+    private val hashService: HashService,
+    private val tokenBlacklistRepository: TokenBlacklistRepository? = null,
+    private val userDeviceRepository: UserDeviceRepository? = null
     private val hashService: HashService
 ) {
 
@@ -73,6 +81,19 @@ class AuthService(
         return user.id?.let { userId ->
             val token = jwtService.generateToken(userId)
             val refreshToken = jwtService.generateRefreshToken(userId)
+            val device = userDeviceRepository?.save(
+                UserDevice(user = user, deviceName = "Unknown device", lastLoginAt = OffsetDateTime.now())
+            )
+
+            // Save refresh token
+            refreshTokenRepository.save(
+                RefreshToken(
+                    user = user,
+                    device = device,
+                    tokenHash = hashService.sha256(refreshToken),
+                    expiresAt = OffsetDateTime.now().plusDays(7)
+                )
+            )
 
             // Save refresh token
             refreshTokenRepository.save(
@@ -159,4 +180,55 @@ class AuthService(
             lastName = user.lastName
         )
     }
+
+    fun logout(token: String, userId: java.util.UUID): Boolean {
+        val tokenUserId = jwtService.getUserIdFromToken(token)
+            ?: throw IllegalArgumentException("Invalid token")
+        require(tokenUserId == userId) { "Token does not belong to the authenticated user" }
+        val tokenId = jwtService.getTokenId(token) ?: throw IllegalArgumentException("Invalid token")
+        val expiresAt = jwtService.getTokenExpiration(token) ?: throw IllegalArgumentException("Invalid token")
+        val blacklistRepository = requireNotNull(tokenBlacklistRepository) { "Token blacklist is not configured" }
+        if (!blacklistRepository.existsByTokenId(tokenId)) {
+            blacklistRepository.save(TokenBlacklist(tokenId = tokenId, userId = userId, expiresAt = expiresAt))
+        }
+        return true
+    }
+
+    fun logoutAllDevices(userId: java.util.UUID): Boolean {
+        val now = OffsetDateTime.now()
+        val tokens = refreshTokenRepository.findAllByUser_Id(userId).filter { it.revokedAt == null }
+        tokens.forEach {
+            it.revokedAt = now
+        }
+        refreshTokenRepository.saveAll(tokens)
+        val user = userRepository.findById(userId).orElseThrow { IllegalArgumentException("User not found") }
+        user.tokensValidAfter = now
+        user.updatedAt = now
+        userRepository.save(user)
+        return true
+    }
+
+    fun changePassword(userId: java.util.UUID, currentPassword: String, newPassword: String): Boolean {
+        require(newPassword.isNotBlank()) { "New password must not be blank" }
+        val user = userRepository.findById(userId).orElseThrow { IllegalArgumentException("User not found") }
+        require(passwordService.matches(currentPassword, user.passwordHash)) { "Invalid current password" }
+        user.passwordHash = passwordService.encode(newPassword)
+        val now = OffsetDateTime.now()
+        user.updatedAt = now
+        user.tokensValidAfter = now
+        userRepository.save(user)
+        val tokens = refreshTokenRepository.findAllByUser_Id(userId).filter { it.revokedAt == null }
+        tokens.forEach { it.revokedAt = now }
+        refreshTokenRepository.saveAll(tokens)
+        return true
+    }
+
+    fun userDevices(userId: java.util.UUID): List<UserDeviceResponse> =
+        requireNotNull(userDeviceRepository) { "User device tracking is not configured" }
+            .findAllByUser_IdOrderByLastLoginAtDesc(userId).map {
+            UserDeviceResponse(
+                it.id!!, it.deviceName, it.platform, it.appVersion,
+                it.lastLoginAt?.toString(), it.createdAt.toString()
+            )
+        }
 }

@@ -18,6 +18,7 @@ import org.mockito.kotlin.verify
 import org.springframework.security.core.context.SecurityContextHolder
 import java.util.Optional
 import java.util.UUID
+import java.time.OffsetDateTime
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertEquals
@@ -57,6 +58,24 @@ class JwtAuthenticationFilterTest {
     @Nested
     @DisplayName("Filter with Valid JWT Token")
     inner class ValidTokenTests {
+
+        @Test
+        @DisplayName("filter should reject a token issued before sessions were invalidated")
+        fun `filter does not authenticate invalidated session token`() {
+            val user = User(
+                id = testUserId, email = testEmail, passwordHash = "hash", active = true,
+                tokensValidAfter = OffsetDateTime.now()
+            )
+            whenever(request.getHeader("Authorization")).thenReturn("Bearer $validToken")
+            whenever(jwtService.validateToken(validToken)).thenReturn(true)
+            whenever(jwtService.getUserIdFromToken(validToken)).thenReturn(testUserId)
+            whenever(jwtService.getTokenIssuedAt(validToken)).thenReturn(OffsetDateTime.now().minusMinutes(1))
+            whenever(userRepository.findById(testUserId)).thenReturn(Optional.of(user))
+
+            jwtAuthenticationFilter.doFilter(request, response, filterChain)
+
+            assertNull(SecurityContextHolder.getContext().authentication)
+        }
 
         @Test
         @DisplayName("filter should set authentication for valid token")
