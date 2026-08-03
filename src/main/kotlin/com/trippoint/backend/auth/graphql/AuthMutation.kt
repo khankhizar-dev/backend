@@ -67,4 +67,3 @@ class AuthMutation(
         (authentication ?: SecurityContextHolder.getContext().authentication)?.principal as? UserPrincipal
             ?: throw IllegalArgumentException("User not authenticated")
 }
-}

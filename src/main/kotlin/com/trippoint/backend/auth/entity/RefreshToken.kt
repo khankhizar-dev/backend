@@ -32,4 +32,3 @@ class RefreshToken(
     @Column(name = "revoked_at")
     var revokedAt: OffsetDateTime? = null
 )
-)
