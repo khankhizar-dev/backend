@@ -180,6 +180,59 @@ query {
 }
 ```
 
+### Email Verification and Password Reset OTPs
+
+Registration creates an account with `emailVerified = false` and issues a six-digit verification code. Codes are stored only as SHA-256 hashes, expire after 10 minutes, and allow at most five failed attempts. A new OTP is scoped to one of two purposes: `EMAIL_VERIFICATION` or `PASSWORD_RESET`.
+
+```graphql
+# Verify the code sent after registration
+mutation {
+  verifyEmailOtp(input: { email: "user@example.com", otp: "123456" })
+}
+
+# Send a new verification code for the authenticated user
+mutation {
+  resendEmailOtp
+}
+
+# Request a password-reset code. This always returns true to avoid revealing whether an email exists.
+mutation {
+  requestPasswordReset(email: "user@example.com")
+}
+
+# Optionally validate the reset code before showing a reset-password form
+mutation {
+  verifyPasswordResetOtp(input: { email: "user@example.com", otp: "123456" })
+}
+
+# Reset the password using a valid reset code. This invalidates existing sessions.
+mutation {
+  resetPassword(input: {
+    email: "user@example.com"
+    otp: "123456"
+    newPassword: "new-secure-password"
+  })
+}
+```
+
+SMTP delivery is disabled by default, so development and tests do not need a mail server. Configure production delivery with:
+
+```yaml
+app:
+  mail:
+    enabled: true
+
+spring:
+  mail:
+    host: smtp.example.com
+    port: 587
+    username: your-smtp-user
+    password: your-smtp-password
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+```
+
 ## 🔐 Authentication Module
 
 The auth module provides:
@@ -190,6 +243,8 @@ The auth module provides:
 - **Password Security**: Bcrypt-based password hashing
 - **Session Security**: JWT blacklist for logout, refresh-token revocation, and session invalidation after password changes
 - **Device Visibility**: Login-device records available through `userDevices`
+- **Email Verification**: Six-digit, expiry-limited email OTPs with attempt protection
+- **Password Reset**: Purpose-scoped OTP reset flow that invalidates active sessions
 
 ### Auth Services
 
@@ -199,6 +254,8 @@ The auth module provides:
 - `UserRepository`: Database access for user entities
 - `TokenBlacklistRepository`: Stores invalidated access-token IDs until their expiry
 - `UserDeviceRepository`: Stores user login-device records
+- `EmailOtpService`: Issues and validates email-verification and password-reset OTPs
+- `EmailOtpRepository`: Stores purpose-scoped hashed OTP records
 
 ## 📊 Database Schema
 
@@ -211,6 +268,7 @@ For production, configure Flyway migrations (currently disabled in config).
 ### Key Entities
 
 - **User**: User accounts with credentials and profile information
+- **EmailOtp**: Hashed verification/reset OTPs, expiry, attempt count, and verification state
 
 ## 📝 Features Completed
 
@@ -221,6 +279,8 @@ For production, configure Flyway migrations (currently disabled in config).
 - Current-session logout and logout from all devices
 - Password change with session invalidation
 - User-device query
+- Email verification OTP issuance, resend, and verification
+- Password reset OTP issuance, verification, and session invalidation
 - Password hashing with Bcrypt
 - Spring Security configuration
 - GraphQL mutations for auth endpoints
