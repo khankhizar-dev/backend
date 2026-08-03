@@ -4,7 +4,11 @@ import com.trippoint.backend.auth.dto.RegisterRequest
 import com.trippoint.backend.auth.dto.AuthPayload
 import com.trippoint.backend.auth.dto.RefreshTokenRequest
 import com.trippoint.backend.auth.dto.RefreshTokenResponse
+import com.trippoint.backend.auth.dto.VerifyEmailOtpRequest
+import com.trippoint.backend.auth.dto.VerifyPasswordResetOtpRequest
+import com.trippoint.backend.auth.dto.ResetPasswordRequest
 import com.trippoint.backend.auth.service.AuthService
+import com.trippoint.backend.auth.service.EmailOtpService
 import org.springframework.graphql.data.method.annotation.Argument
 import org.springframework.graphql.data.method.annotation.MutationMapping
 import org.springframework.stereotype.Controller
@@ -16,7 +20,8 @@ import org.springframework.web.context.request.ServletRequestAttributes
 
 @Controller
 class AuthMutation(
-    private val authService: AuthService
+    private val authService: AuthService,
+    private val emailOtpService: EmailOtpService
 ) {
 
     @MutationMapping
@@ -62,6 +67,25 @@ class AuthMutation(
     ): Boolean = authService.changePassword(
         authenticatedPrincipal(authentication).userId, currentPassword, newPassword
     )
+
+    @MutationMapping
+    fun verifyEmailOtp(@Argument input: VerifyEmailOtpRequest): Boolean =
+        emailOtpService.verifyEmailOtp(input.email, input.otp)
+
+    @MutationMapping
+    fun resendEmailOtp(authentication: Authentication?): Boolean =
+        emailOtpService.resendEmailVerificationOtp(authenticatedPrincipal(authentication).userId)
+
+    @MutationMapping
+    fun requestPasswordReset(@Argument email: String): Boolean = emailOtpService.requestPasswordReset(email)
+
+    @MutationMapping
+    fun verifyPasswordResetOtp(@Argument input: VerifyPasswordResetOtpRequest): Boolean =
+        emailOtpService.verifyPasswordResetOtp(input.email, input.otp)
+
+    @MutationMapping
+    fun resetPassword(@Argument input: ResetPasswordRequest): Boolean =
+        authService.resetPassword(input.email, input.otp, input.newPassword)
 
     private fun authenticatedPrincipal(authentication: Authentication?): UserPrincipal =
         (authentication ?: SecurityContextHolder.getContext().authentication)?.principal as? UserPrincipal

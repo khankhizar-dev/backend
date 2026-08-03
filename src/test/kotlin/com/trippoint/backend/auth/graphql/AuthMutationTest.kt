@@ -5,6 +5,7 @@ import com.trippoint.backend.auth.dto.RegisterRequest
 
 import com.trippoint.backend.auth.dto.UserResponse
 import com.trippoint.backend.auth.service.AuthService
+import com.trippoint.backend.auth.service.EmailOtpService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.DisplayName
@@ -29,6 +30,9 @@ class AuthMutationTest {
     @Mock
     private lateinit var authService: AuthService
 
+    @Mock
+    private lateinit var emailOtpService: EmailOtpService
+
     private lateinit var authMutation: AuthMutation
 
     private val testUserId = UUID.randomUUID()
@@ -40,7 +44,7 @@ class AuthMutationTest {
     @BeforeEach
     fun setup() {
         MockitoAnnotations.openMocks(this)
-        authMutation = AuthMutation(authService)
+        authMutation = AuthMutation(authService, emailOtpService)
     }
 
     @Test
