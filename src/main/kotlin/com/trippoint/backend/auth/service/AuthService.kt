@@ -14,8 +14,10 @@ import com.trippoint.backend.auth.repository.TokenBlacklistRepository
 import com.trippoint.backend.auth.repository.UserDeviceRepository
 import com.trippoint.backend.auth.entity.TokenBlacklist
 import com.trippoint.backend.auth.entity.UserDevice
+import com.trippoint.backend.auth.mapper.UserMapper
 import org.springframework.stereotype.Service
 import java.time.OffsetDateTime
+import java.util.UUID
 
 @Service
 class AuthService(
@@ -59,12 +61,7 @@ class AuthService(
 
 
             AuthPayload(
-                user = UserResponse(
-                    id = userId,
-                    email = saved.email,
-                    firstName = saved.firstName,
-                    lastName = saved.lastName
-                ),
+                user = UserMapper.toResponse(user),
                 token = token,
                 refreshToken = refreshToken
             )
@@ -106,12 +103,7 @@ class AuthService(
             )
 
             AuthPayload(
-                user = UserResponse(
-                    id = userId,
-                    email = user.email,
-                    firstName = user.firstName,
-                    lastName = user.lastName
-                ),
+                user = UserMapper.toResponse(user),
                 token = token,
                 refreshToken = refreshToken
             )
@@ -168,18 +160,13 @@ class AuthService(
         )
     }
 
-    fun me(userId: java.util.UUID): UserResponse {
+    fun me(userId: UUID): UserResponse {
         val user = userRepository.findById(userId)
             .orElseThrow {
                 IllegalArgumentException("User not found")
             }
 
-        return UserResponse(
-            id = user.id!!,
-            email = user.email,
-            firstName = user.firstName,
-            lastName = user.lastName
-        )
+        return UserMapper.toResponse(user)
     }
 
     fun logout(token: String, userId: java.util.UUID): Boolean {

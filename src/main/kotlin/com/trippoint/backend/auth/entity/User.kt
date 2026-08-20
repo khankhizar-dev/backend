@@ -24,8 +24,23 @@ class User(
     @Column(name = "last_name")
     var lastName: String? = null,
 
+    @Column(unique = true)
+    var username: String? = null,
+
     @Column(name = "profile_image_url")
     var profileImageUrl: String? = null,
+
+    @Column
+    var country: String? = null,
+
+    @Column(length = 3)
+    var currency: String? = null,
+
+    @Column(length = 10)
+    var language: String? = null,
+
+    @Column(length = 50)
+    var timezone: String? = null,
 
     @Column(name = "is_email_verified")
     var emailVerified: Boolean = false,

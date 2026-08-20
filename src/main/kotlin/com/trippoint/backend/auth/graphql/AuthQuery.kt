@@ -9,21 +9,23 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Controller
 import org.springframework.graphql.data.method.annotation.SchemaMapping
 import com.trippoint.backend.auth.dto.UserDeviceResponse
+import com.trippoint.backend.auth.service.UserService
 
 @Controller
 class AuthQuery(
-    private val authService: AuthService
+    private val authService: AuthService,
+    private val userService: UserService
 ) {
 
     @QueryMapping
     fun me(authentication: Authentication?): UserResponse {
         val auth = authentication ?: SecurityContextHolder.getContext().authentication
-            ?: throw IllegalArgumentException("User not authenticated")
+        ?: throw IllegalArgumentException("User not authenticated")
 
         val principal = auth.principal as? UserPrincipal
             ?: throw IllegalArgumentException("Invalid authentication principal")
 
-        return authService.me(principal.userId)
+        return userService.getProfile(principal.userId)
     }
 
     @QueryMapping

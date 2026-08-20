@@ -7,6 +7,8 @@ import com.trippoint.backend.auth.dto.RefreshTokenResponse
 import com.trippoint.backend.auth.dto.VerifyEmailOtpRequest
 import com.trippoint.backend.auth.dto.VerifyPasswordResetOtpRequest
 import com.trippoint.backend.auth.dto.ResetPasswordRequest
+import com.trippoint.backend.auth.dto.UpdateProfileInput
+import com.trippoint.backend.auth.dto.UserResponse
 import com.trippoint.backend.auth.service.AuthService
 import com.trippoint.backend.auth.service.EmailOtpService
 import org.springframework.graphql.data.method.annotation.Argument
@@ -15,13 +17,15 @@ import org.springframework.stereotype.Controller
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
 import com.trippoint.backend.auth.security.UserPrincipal
+import com.trippoint.backend.auth.service.UserService
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
 
 @Controller
 class AuthMutation(
     private val authService: AuthService,
-    private val emailOtpService: EmailOtpService
+    private val emailOtpService: EmailOtpService,
+    private val userService: UserService
 ) {
 
     @MutationMapping
@@ -90,4 +94,14 @@ class AuthMutation(
     private fun authenticatedPrincipal(authentication: Authentication?): UserPrincipal =
         (authentication ?: SecurityContextHolder.getContext().authentication)?.principal as? UserPrincipal
             ?: throw IllegalArgumentException("User not authenticated")
+
+    @MutationMapping
+    fun updateProfile(
+        @Argument input: UpdateProfileInput,
+        authentication: Authentication?
+    ): UserResponse =
+        userService.updateProfile(
+            authenticatedPrincipal(authentication).userId,
+            input
+        )
 }
