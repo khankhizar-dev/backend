@@ -5,9 +5,16 @@ type Query {
 
 type User {
     id: ID!
-    email: String!
-    firstName: String
-    lastName: String
+        email: String!
+        firstName: String
+        lastName: String
+        fullName: String
+        username: String
+        profilePhotoUrl: String
+        country: String
+        currency: String
+        language: String
+        timezone: String
 }
 
 type UserDevice {
@@ -72,4 +79,15 @@ extend type Mutation {
     requestPasswordReset(email: String!): Boolean!
     verifyPasswordResetOtp(input: VerifyPasswordResetOtpInput!): Boolean!
     resetPassword(input: ResetPasswordInput!): Boolean!
+    updateProfile(input: UpdateProfileInput!): User!
+}
+
+input UpdateProfileInput {
+    firstName: String
+    lastName: String
+    username: String
+    country: String
+    currency: String
+    language: String
+    timezone: String
 }

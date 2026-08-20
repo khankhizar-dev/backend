@@ -6,5 +6,12 @@ data class UserResponse(
     val id: UUID,
     val email: String,
     val firstName: String?,
-    val lastName: String?
+    val lastName: String?,
+    val fullName: String? = null,
+    val username: String? = null,
+    val profilePhotoUrl: String? = null,
+    val country: String? = null,
+    val currency: String? = null,
+    val language: String? = null,
+    val timezone: String? = null
 )

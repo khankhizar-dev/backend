@@ -16,24 +16,29 @@ import org.mockito.kotlin.whenever
 import org.mockito.kotlin.verify
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import com.trippoint.backend.auth.security.UserPrincipal
+import com.trippoint.backend.auth.service.UserService
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
 import jakarta.servlet.http.HttpServletRequest
+import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.Mockito.mock
+import org.mockito.junit.jupiter.MockitoExtension
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
+@ExtendWith(MockitoExtension::class)
 @DisplayName("AuthMutation Tests")
 class AuthMutationTest {
 
-    @Mock
     private lateinit var authService: AuthService
 
-    @Mock
     private lateinit var emailOtpService: EmailOtpService
 
     private lateinit var authMutation: AuthMutation
+
+    private lateinit var userService: UserService
 
     private val testUserId = UUID.randomUUID()
     private val testEmail = "test@example.com"
@@ -43,8 +48,15 @@ class AuthMutationTest {
 
     @BeforeEach
     fun setup() {
-        MockitoAnnotations.openMocks(this)
-        authMutation = AuthMutation(authService, emailOtpService)
+        authService = mock()
+        emailOtpService = mock()
+        userService = mock()
+
+        authMutation = AuthMutation(
+            authService = authService,
+            emailOtpService = emailOtpService,
+            userService = userService
+        )
     }
 
     @Test

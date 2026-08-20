@@ -4,10 +4,14 @@ import com.trippoint.backend.auth.dto.UserDeviceResponse
 import com.trippoint.backend.auth.dto.UserResponse
 import com.trippoint.backend.auth.security.UserPrincipal
 import com.trippoint.backend.auth.service.AuthService
+import com.trippoint.backend.auth.service.UserService
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mockito.mock
+import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -15,22 +19,46 @@ import org.springframework.security.core.context.SecurityContextHolder
 import java.util.UUID
 import kotlin.test.assertEquals
 
+@ExtendWith(MockitoExtension::class)
 class AuthQueryTest {
-    private val service = mock<AuthService>()
-    private val query = AuthQuery(service)
+    private lateinit var userService: UserService
+    private lateinit var service: AuthService
+    private lateinit var query: AuthQuery
     private val userId = UUID.randomUUID()
     private val authentication = UsernamePasswordAuthenticationToken(UserPrincipal(userId, "user@example.com"), null)
+
+    @BeforeEach
+    fun setup() {
+        service = mock()
+        userService = mock()
+
+        query = AuthQuery(
+            authService = service,
+            userService = userService
+        )
+    }
 
     @AfterEach
     fun clearSecurityContext() = SecurityContextHolder.clearContext()
 
     @Test
     fun `me delegates using the authenticated principal`() {
-        val user = UserResponse(userId, "user@example.com", "First", "Last")
-        whenever(service.me(userId)).thenReturn(user)
+        val user = UserResponse(
+            userId,
+            "user@example.com",
+            "First",
+            "Last"
+        )
 
-        assertEquals(user, query.me(authentication))
-        verify(service).me(userId)
+        whenever(userService.getProfile(userId))
+            .thenReturn(user)
+
+        assertEquals(
+            user,
+            query.me(authentication)
+        )
+
+        verify(userService).getProfile(userId)
     }
 
     @Test
