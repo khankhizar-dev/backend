@@ -7,7 +7,9 @@ import com.trippoint.backend.auth.dto.RefreshTokenResponse
 import com.trippoint.backend.auth.dto.VerifyEmailOtpRequest
 import com.trippoint.backend.auth.dto.VerifyPasswordResetOtpRequest
 import com.trippoint.backend.auth.dto.ResetPasswordRequest
+import com.trippoint.backend.auth.dto.UpdatePreferencesInput
 import com.trippoint.backend.auth.dto.UpdateProfileInput
+import com.trippoint.backend.auth.dto.UserPreferencesResponse
 import com.trippoint.backend.auth.dto.UserResponse
 import com.trippoint.backend.auth.service.AuthService
 import com.trippoint.backend.auth.service.EmailOtpService
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Controller
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
 import com.trippoint.backend.auth.security.UserPrincipal
+import com.trippoint.backend.auth.service.PreferencesService
 import com.trippoint.backend.auth.service.UserService
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
@@ -25,7 +28,8 @@ import org.springframework.web.context.request.ServletRequestAttributes
 class AuthMutation(
     private val authService: AuthService,
     private val emailOtpService: EmailOtpService,
-    private val userService: UserService
+    private val userService: UserService,
+    private val preferencesService: PreferencesService
 ) {
 
     @MutationMapping
@@ -104,4 +108,28 @@ class AuthMutation(
             authenticatedPrincipal(authentication).userId,
             input
         )
+
+    @MutationMapping
+    fun updatePreferences(
+        @Argument input: UpdatePreferencesInput,
+        authentication: Authentication?
+    ): UserPreferencesResponse {
+
+        val preferences = preferencesService.updatePreferences(
+            authenticatedPrincipal(authentication).userId,
+            input.currency,
+            input.language,
+            input.dateFormat,
+            input.units,
+            input.theme
+        )
+
+        return UserPreferencesResponse(
+            currency = preferences.currency,
+            language = preferences.language,
+            dateFormat = preferences.dateFormat,
+            units = preferences.units,
+            theme = preferences.theme,
+            timezone = preferences.timezone)
+    }
 }

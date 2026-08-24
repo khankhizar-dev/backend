@@ -92,7 +92,10 @@ class UserServiceTest {
             country = "US",
             currency = "USD",
             language = "en",
-            timezone = "America/New_York"
+            timezone = "America/New_York",
+            phoneNumber = "+919999999999",
+            dateOfBirth = "1992-05-12",
+            nationality = "Indian"
         )
 
         val response = userService.updateProfile(userId, input)

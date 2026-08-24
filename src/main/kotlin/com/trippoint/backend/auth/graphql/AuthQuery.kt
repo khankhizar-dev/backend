@@ -9,12 +9,15 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Controller
 import org.springframework.graphql.data.method.annotation.SchemaMapping
 import com.trippoint.backend.auth.dto.UserDeviceResponse
+import com.trippoint.backend.auth.dto.UserPreferencesResponse
+import com.trippoint.backend.auth.service.PreferencesService
 import com.trippoint.backend.auth.service.UserService
 
 @Controller
 class AuthQuery(
     private val authService: AuthService,
-    private val userService: UserService
+    private val userService: UserService,
+    private val preferencesService: PreferencesService
 ) {
 
     @QueryMapping
@@ -35,5 +38,29 @@ class AuthQuery(
         val principal = auth.principal as? UserPrincipal
             ?: throw IllegalArgumentException("Invalid authentication principal")
         return authService.userDevices(principal.userId)
+    }
+
+    @QueryMapping
+    fun myPreferences(
+        authentication: Authentication?
+    ): UserPreferencesResponse {
+
+        val auth = authentication
+            ?: SecurityContextHolder.getContext().authentication
+            ?: throw IllegalArgumentException("User not authenticated")
+
+        val principal = auth.principal as? UserPrincipal
+            ?: throw IllegalArgumentException("Invalid authentication principal")
+
+        val preferences = preferencesService.getPreferences(principal.userId)
+
+        return UserPreferencesResponse(
+            currency = preferences.currency,
+            language = preferences.language,
+            dateFormat = preferences.dateFormat,
+            units = preferences.units,
+            theme = preferences.theme,
+            timezone = preferences.timezone
+        )
     }
 }

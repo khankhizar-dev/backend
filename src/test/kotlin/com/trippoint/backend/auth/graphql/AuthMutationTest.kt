@@ -16,6 +16,7 @@ import org.mockito.kotlin.whenever
 import org.mockito.kotlin.verify
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import com.trippoint.backend.auth.security.UserPrincipal
+import com.trippoint.backend.auth.service.PreferencesService
 import com.trippoint.backend.auth.service.UserService
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
@@ -39,6 +40,7 @@ class AuthMutationTest {
     private lateinit var authMutation: AuthMutation
 
     private lateinit var userService: UserService
+    private lateinit var preferencesService: PreferencesService
 
     private val testUserId = UUID.randomUUID()
     private val testEmail = "test@example.com"
@@ -51,11 +53,13 @@ class AuthMutationTest {
         authService = mock()
         emailOtpService = mock()
         userService = mock()
+        preferencesService = mock()
 
         authMutation = AuthMutation(
             authService = authService,
             emailOtpService = emailOtpService,
-            userService = userService
+            userService = userService,
+            preferencesService = preferencesService
         )
     }
 

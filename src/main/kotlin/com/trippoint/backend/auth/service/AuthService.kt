@@ -26,6 +26,7 @@ class AuthService(
     private val passwordService: PasswordService,
     private val jwtService: JwtService,
     private val hashService: HashService,
+    private val preferencesService: PreferencesService,
     private val tokenBlacklistRepository: TokenBlacklistRepository? = null,
     private val userDeviceRepository: UserDeviceRepository? = null,
     private val emailOtpService: EmailOtpService? = null
@@ -44,6 +45,7 @@ class AuthService(
         )
 
         val saved = userRepository.save(user)
+        preferencesService.createDefaultPreferences(saved)
         emailOtpService?.issueEmailVerificationOtp(saved)
 
         return saved.id?.let { userId ->

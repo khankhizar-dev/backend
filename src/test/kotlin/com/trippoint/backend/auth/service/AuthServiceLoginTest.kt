@@ -39,6 +39,9 @@ class AuthServiceLoginTest {
     @Mock
     lateinit var hashService: HashService
 
+    @Mock
+    lateinit var preferencesService: PreferencesService
+
     private val testUserId = UUID.randomUUID()
     private val testEmail = "test@example.com"
     private val testPassword = "SecurePass@123"
@@ -49,7 +52,7 @@ class AuthServiceLoginTest {
     @BeforeEach
     fun setup() {
         MockitoAnnotations.openMocks(this)
-        authService = AuthService(userRepository, refreshTokenRepository, passwordService, jwtService, hashService)
+        authService = AuthService(userRepository, refreshTokenRepository, passwordService, jwtService, hashService, preferencesService)
         whenever(hashService.sha256(any()))
             .thenReturn("hashed-refresh-token")
 

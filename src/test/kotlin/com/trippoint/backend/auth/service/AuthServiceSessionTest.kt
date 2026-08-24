@@ -35,6 +35,8 @@ class AuthServiceSessionTest {
     @Mock private lateinit var hashes: HashService
     @Mock private lateinit var blacklist: TokenBlacklistRepository
     @Mock private lateinit var devices: UserDeviceRepository
+    @Mock
+    lateinit var preferencesService: PreferencesService
 
     private lateinit var service: AuthService
     private val userId = UUID.randomUUID()
@@ -43,7 +45,7 @@ class AuthServiceSessionTest {
     @BeforeEach
     fun setUp() {
         MockitoAnnotations.openMocks(this)
-        service = AuthService(users, refreshTokens, passwords, jwt, hashes, blacklist, devices)
+        service = AuthService(users, refreshTokens, passwords, jwt, hashes, preferencesService,blacklist, devices)
     }
 
     @Test
@@ -95,7 +97,7 @@ class AuthServiceSessionTest {
         whenever(jwt.getTokenExpiration("no-expiry")).thenReturn(null)
         assertThrows<IllegalArgumentException> { service.logout("no-expiry", userId) }
 
-        val withoutBlacklist = AuthService(users, refreshTokens, passwords, jwt, hashes)
+        val withoutBlacklist = AuthService(users, refreshTokens, passwords, jwt, hashes, preferencesService)
         whenever(jwt.getUserIdFromToken("no-repository")).thenReturn(userId)
         whenever(jwt.getTokenId("no-repository")).thenReturn("jti")
         whenever(jwt.getTokenExpiration("no-repository")).thenReturn(OffsetDateTime.now().plusHours(1))
@@ -170,7 +172,7 @@ class AuthServiceSessionTest {
 
     @Test
     fun `user devices requires device tracking configuration`() {
-        val withoutDevices = AuthService(users, refreshTokens, passwords, jwt, hashes, blacklist)
+        val withoutDevices = AuthService(users, refreshTokens, passwords, jwt, hashes, preferencesService,blacklist)
         assertThrows<IllegalArgumentException> { withoutDevices.userDevices(userId) }
     }
 }

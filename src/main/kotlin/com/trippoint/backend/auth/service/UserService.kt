@@ -6,6 +6,7 @@ import com.trippoint.backend.auth.mapper.UserMapper
 import com.trippoint.backend.auth.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDate
 import java.util.UUID
 
 @Service
@@ -61,6 +62,22 @@ class UserService(
 
         input.country?.let {
             user.country = it.trim()
+        }
+
+        input.phoneNumber?.let {
+            user.phoneNumber = it.trim()
+        }
+
+        input.dateOfBirth?.let {
+            user.dateOfBirth = LocalDate.parse(it)
+        }
+
+        input.nationality?.let {
+            user.nationality = it.trim().uppercase()
+        }
+
+        input.profilePhotoUrl?.let {
+            user.profileImageUrl = it.trim()
         }
 
         input.currency?.let {
