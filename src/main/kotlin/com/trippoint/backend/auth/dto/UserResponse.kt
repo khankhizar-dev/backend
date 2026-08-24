@@ -1,5 +1,6 @@
 package com.trippoint.backend.auth.dto
 
+import java.time.LocalDate
 import java.util.UUID
 
 data class UserResponse(
@@ -9,6 +10,9 @@ data class UserResponse(
     val lastName: String?,
     val fullName: String? = null,
     val username: String? = null,
+    val phoneNumber: String? = null,
+    val dateOfBirth: LocalDate? = null,
+    val nationality: String? = null,
     val profilePhotoUrl: String? = null,
     val country: String? = null,
     val currency: String? = null,

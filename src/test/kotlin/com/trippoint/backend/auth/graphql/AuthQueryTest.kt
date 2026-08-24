@@ -4,12 +4,14 @@ import com.trippoint.backend.auth.dto.UserDeviceResponse
 import com.trippoint.backend.auth.dto.UserResponse
 import com.trippoint.backend.auth.security.UserPrincipal
 import com.trippoint.backend.auth.service.AuthService
+import com.trippoint.backend.auth.service.PreferencesService
 import com.trippoint.backend.auth.service.UserService
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.Mock
 import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.verify
@@ -24,6 +26,8 @@ class AuthQueryTest {
     private lateinit var userService: UserService
     private lateinit var service: AuthService
     private lateinit var query: AuthQuery
+    @Mock
+    lateinit var preferencesService: PreferencesService
     private val userId = UUID.randomUUID()
     private val authentication = UsernamePasswordAuthenticationToken(UserPrincipal(userId, "user@example.com"), null)
 
@@ -34,7 +38,8 @@ class AuthQueryTest {
 
         query = AuthQuery(
             authService = service,
-            userService = userService
+            userService = userService,
+            preferencesService
         )
     }
 

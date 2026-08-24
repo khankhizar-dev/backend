@@ -1,6 +1,7 @@
 package com.trippoint.backend.auth.entity
 
 import jakarta.persistence.*
+import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -26,6 +27,15 @@ class User(
 
     @Column(unique = true)
     var username: String? = null,
+
+    @Column(name = "phone_number")
+    var phoneNumber: String? = null,
+
+    @Column(name = "date_of_birth")
+    var dateOfBirth: LocalDate? = null,
+
+    @Column(name = "nationality")
+    var nationality: String? = null,
 
     @Column(name = "profile_image_url")
     var profileImageUrl: String? = null,

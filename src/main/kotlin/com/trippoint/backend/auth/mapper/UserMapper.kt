@@ -24,7 +24,10 @@ object UserMapper {
             country = user.country,
             currency = user.currency,
             language = user.language,
-            timezone = user.timezone
+            timezone = user.timezone,
+            phoneNumber = user.phoneNumber,
+            dateOfBirth = user.dateOfBirth,
+            nationality = user.nationality
         )
     }
 }

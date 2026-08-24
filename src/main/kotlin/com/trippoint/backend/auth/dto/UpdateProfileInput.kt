@@ -7,5 +7,9 @@ data class UpdateProfileInput(
     val country: String? = null,
     val currency: String? = null,
     val language: String? = null,
-    val timezone: String? = null
+    val timezone: String? = null,
+    val phoneNumber: String? = null,
+    val dateOfBirth: String? = null,
+    val nationality: String? = null,
+    val profilePhotoUrl: String? = null
 )
