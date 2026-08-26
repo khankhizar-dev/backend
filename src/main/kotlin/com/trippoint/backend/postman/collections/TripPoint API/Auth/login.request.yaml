@@ -1,0 +1,38 @@
+$kind: graphql-request
+name: Login
+order: 2000
+url: '{{baseUrl}}/graphql'
+auth:
+  type: noauth
+query: |-
+  mutation Login($email: String!, $password: String!) {
+    login(email: $email, password: $password) {
+      token
+      refreshToken
+      user {
+        id
+        email
+        firstName
+        lastName
+      }
+    }
+  }
+variables: |-
+  {
+    "email": "user@example.com",
+    "password": "password123"
+  }
+events:
+  - listen: test
+    script:
+      type: text/javascript
+      exec: |-
+        const data = pm.response.json();
+        const login = data?.data?.login;
+        if (login?.token) {
+            pm.collectionVariables.set("token", login.token);
+            pm.collectionVariables.set("refreshToken", login.refreshToken);
+            console.log("✅ Token saved to collection variables");
+        } else {
+            console.error("❌ Login failed – no token in response", JSON.stringify(data));
+        }

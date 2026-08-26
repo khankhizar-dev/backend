@@ -1,0 +1,17 @@
+$kind: graphql-request
+name: Verify Email OTP
+order: 7000
+url: '{{baseUrl}}/graphql'
+auth:
+  type: noauth
+query: |-
+  mutation VerifyEmailOtp($input: VerifyEmailOtpRequest!) {
+    verifyEmailOtp(input: $input)
+  }
+variables: |-
+  {
+    "input": {
+      "email": "user@example.com",
+      "otp": "123456"
+    }
+  }

@@ -1,0 +1,28 @@
+$kind: graphql-request
+name: Register
+order: 1000
+url: '{{baseUrl}}/graphql'
+auth:
+  type: noauth
+query: |-
+  mutation Register($input: RegisterRequest!) {
+    register(input: $input) {
+      token
+      refreshToken
+      user {
+        id
+        email
+        firstName
+        lastName
+      }
+    }
+  }
+variables: |-
+  {
+    "input": {
+      "email": "user@example.com",
+      "password": "password123",
+      "firstName": "John",
+      "lastName": "Doe"
+    }
+  }

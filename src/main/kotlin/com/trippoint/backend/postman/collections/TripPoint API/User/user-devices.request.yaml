@@ -1,0 +1,16 @@
+$kind: graphql-request
+name: Get User Devices
+order: 3000
+url: '{{baseUrl}}/graphql'
+query: |-
+  query UserDevices {
+    userDevices {
+      id
+      deviceName
+      platform
+      appVersion
+      lastLoginAt
+      createdAt
+    }
+  }
+variables: '{}'

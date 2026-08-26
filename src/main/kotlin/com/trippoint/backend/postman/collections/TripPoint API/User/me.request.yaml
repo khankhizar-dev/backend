@@ -1,0 +1,24 @@
+$kind: graphql-request
+name: Get Me
+order: 1000
+url: '{{baseUrl}}/graphql'
+query: |-
+  query Me {
+    me {
+      id
+      email
+      firstName
+      lastName
+      fullName
+      username
+      phoneNumber
+      dateOfBirth
+      nationality
+      profilePhotoUrl
+      country
+      currency
+      language
+      timezone
+    }
+  }
+variables: '{}'

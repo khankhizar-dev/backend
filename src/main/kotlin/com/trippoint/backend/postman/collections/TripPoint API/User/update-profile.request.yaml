@@ -1,0 +1,36 @@
+$kind: graphql-request
+name: Update Profile
+order: 4000
+url: '{{baseUrl}}/graphql'
+query: |-
+  mutation UpdateProfile($input: UpdateProfileInput!) {
+    updateProfile(input: $input) {
+      id
+      email
+      firstName
+      lastName
+      fullName
+      username
+      phoneNumber
+      country
+      currency
+      language
+      timezone
+    }
+  }
+variables: |-
+  {
+    "input": {
+      "firstName": "John",
+      "lastName": "Doe",
+      "username": "johndoe",
+      "country": "US",
+      "currency": "USD",
+      "language": "en",
+      "timezone": "America/New_York",
+      "phoneNumber": "+1234567890",
+      "dateOfBirth": "1990-01-01",
+      "nationality": "American",
+      "profilePhotoUrl": "https://example.com/photo.jpg"
+    }
+  }

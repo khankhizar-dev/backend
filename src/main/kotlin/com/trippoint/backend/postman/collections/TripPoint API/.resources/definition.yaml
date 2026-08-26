@@ -1,0 +1,16 @@
+$kind: collection
+name: TripPoint API
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{token}}'
+variables:
+  - key: baseUrl
+    value: 'http://localhost:8080'
+  - key: token
+    value: ''
+  - key: refreshToken
+    value: ''
+  - key: tripId
+    value: ''

@@ -1,0 +1,27 @@
+$kind: graphql-request
+name: Get Trips
+order: 1000
+url: '{{baseUrl}}/graphql'
+query: |-
+  query Trips($filter: TripFilterInput) {
+    trips(filter: $filter) {
+      id
+      ownerId
+      name
+      destination
+      startDate
+      endDate
+      status
+      progress
+      travelers
+      createdAt
+      updatedAt
+    }
+  }
+variables: |-
+  {
+    "filter": {
+      "status": null,
+      "search": null
+    }
+  }

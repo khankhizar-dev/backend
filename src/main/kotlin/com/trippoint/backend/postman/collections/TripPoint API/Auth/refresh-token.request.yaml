@@ -1,0 +1,19 @@
+$kind: graphql-request
+name: Refresh Token
+order: 3000
+url: '{{baseUrl}}/graphql'
+auth:
+  type: noauth
+query: |-
+  mutation RefreshToken($input: RefreshTokenRequest!) {
+    refreshToken(input: $input) {
+      token
+      refreshToken
+    }
+  }
+variables: |-
+  {
+    "input": {
+      "refreshToken": "{{refreshToken}}"
+    }
+  }

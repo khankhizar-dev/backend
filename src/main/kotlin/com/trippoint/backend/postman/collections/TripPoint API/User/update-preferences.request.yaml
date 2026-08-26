@@ -1,0 +1,25 @@
+$kind: graphql-request
+name: Update Preferences
+order: 5000
+url: '{{baseUrl}}/graphql'
+query: |-
+  mutation UpdatePreferences($input: UpdatePreferencesInput!) {
+    updatePreferences(input: $input) {
+      currency
+      language
+      dateFormat
+      units
+      theme
+      timezone
+    }
+  }
+variables: |-
+  {
+    "input": {
+      "currency": "USD",
+      "language": "en",
+      "dateFormat": "MM/DD/YYYY",
+      "units": "imperial",
+      "theme": "dark"
+    }
+  }
