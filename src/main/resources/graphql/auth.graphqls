@@ -114,3 +114,103 @@ input UpdatePreferencesInput {
 extend type Query {
     myPreferences: UserPreferences!
 }
+
+enum TripStatus {
+    DRAFT
+    UPCOMING
+    IN_PROGRESS
+    COMPLETED
+    ARCHIVED
+}
+
+type Trip {
+    id: ID!
+    ownerId: ID!
+    name: String!
+    destination: String!
+    startDate: String!
+    endDate: String!
+    status: TripStatus!
+    progress: Int!
+    travelers: Int!
+    createdAt: String!
+    updatedAt: String!
+}
+
+input CreateTripInput {
+    name: String!
+    destination: String!
+    startDate: String!
+    endDate: String!
+}
+
+input TripFilterInput {
+    status: TripStatus
+    search: String
+}
+
+extend type Query {
+    trips(filter: TripFilterInput): [Trip!]!
+    trip(id: ID!): Trip!
+}
+
+extend type Mutation {
+    createTrip(input: CreateTripInput!): Trip!
+    updateTrip(id: ID!, input: UpdateTripInput!): Trip!
+    archiveTrip(id: ID!): Boolean!
+    restoreTrip(id: ID!): Trip!
+    deleteTrip(id: ID!): Boolean!
+}
+
+enum TripMemberRole {
+    OWNER
+    MEMBER
+}
+
+enum TripMemberStatus {
+    PENDING
+    ACCEPTED
+    DECLINED
+}
+
+type TripMember {
+    id: ID!
+    tripId: ID!
+    userId: ID!
+    role: TripMemberRole!
+    status: TripMemberStatus!
+    invitedAt: String!
+    joinedAt: String
+}
+
+input InviteTripMemberInput {
+    email: String!
+}
+
+extend type Query {
+    tripMembers(tripId: ID!): [TripMember!]!
+}
+
+extend type Mutation {
+    inviteTripMember(
+        tripId: ID!
+        input: InviteTripMemberInput!
+    ): TripMember!
+}
+
+extend type Mutation {
+    acceptTripInvitation(tripId: ID!): TripMember!
+    declineTripInvitation(tripId: ID!): TripMember!
+}
+
+extend type Query {
+    myTripInvitations: [TripMember!]!
+}
+
+input UpdateTripInput {
+    name: String
+    destination: String
+    startDate: String
+    endDate: String
+    status: TripStatus
+}

@@ -1,0 +1,9 @@
+$kind: graphql-request
+name: Logout
+order: 4000
+url: '{{baseUrl}}/graphql'
+query: |-
+  mutation Logout {
+    logout
+  }
+variables: '{}'

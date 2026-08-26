@@ -1,0 +1,9 @@
+$kind: graphql-request
+name: Resend Email OTP
+order: 8000
+url: '{{baseUrl}}/graphql'
+query: |-
+  mutation ResendEmailOtp {
+    resendEmailOtp
+  }
+variables: '{}'

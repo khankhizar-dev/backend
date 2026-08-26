@@ -1,0 +1,9 @@
+$kind: graphql-request
+name: Logout All Devices
+order: 5000
+url: '{{baseUrl}}/graphql'
+query: |-
+  mutation LogoutAllDevices {
+    logoutAllDevices
+  }
+variables: '{}'

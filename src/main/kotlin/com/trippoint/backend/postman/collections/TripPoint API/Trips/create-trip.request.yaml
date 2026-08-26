@@ -1,0 +1,29 @@
+$kind: graphql-request
+name: Create Trip
+order: 3000
+url: '{{baseUrl}}/graphql'
+query: |-
+  mutation CreateTrip($input: CreateTripInput!) {
+    createTrip(input: $input) {
+      id
+      ownerId
+      name
+      destination
+      startDate
+      endDate
+      status
+      progress
+      travelers
+      createdAt
+      updatedAt
+    }
+  }
+variables: |-
+  {
+    "input": {
+      "name": "Summer Vacation",
+      "destination": "Paris, France",
+      "startDate": "2025-07-01",
+      "endDate": "2025-07-14"
+    }
+  }
