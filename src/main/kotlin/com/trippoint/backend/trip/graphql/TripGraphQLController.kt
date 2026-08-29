@@ -128,14 +128,14 @@ class TripGraphQLController(
 
     @MutationMapping
     fun updateTrip(
-        @Argument tripId: UUID,
+        @Argument id: UUID,
         @Argument input: UpdateTripInput,
         authentication: Authentication?
     ): TripResponse {
 
         return tripService.updateTrip(
             authenticatedUserId(authentication),
-            tripId,
+            id,
             input
         )
     }
