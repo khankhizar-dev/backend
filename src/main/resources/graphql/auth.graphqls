@@ -214,3 +214,147 @@ input UpdateTripInput {
     endDate: String
     status: TripStatus
 }
+
+type ItineraryDay {
+    id: ID!
+    tripId: ID!
+    dayNumber: Int!
+    date: String!
+    title: String
+    notes: String
+    createdAt: String!
+    updatedAt: String!
+}
+
+input CreateItineraryDayInput {
+    dayNumber: Int!
+    date: String!
+    title: String
+    notes: String
+}
+
+input UpdateItineraryDayInput {
+    dayNumber: Int
+    date: String
+    title: String
+    notes: String
+}
+
+extend type Query {
+    itineraryDays(tripId: ID!): [ItineraryDay!]!
+    itineraryDay(tripId: ID!, dayNumber: Int!): ItineraryDay!
+}
+
+extend type Mutation {
+    createItineraryDay(
+        tripId: ID!
+        input: CreateItineraryDayInput!
+    ): ItineraryDay!
+
+    updateItineraryDay(
+        tripId: ID!
+        dayNumber: Int!
+        input: UpdateItineraryDayInput!
+    ): ItineraryDay!
+
+    deleteItineraryDay(
+        tripId: ID!
+        dayNumber: Int!
+    ): Boolean!
+}
+
+enum ActivityType {
+    ACTIVITY
+    MEAL
+    TRANSPORT
+    HOTEL
+    FLIGHT
+    TRAIN
+    BUS
+    EVENT
+    SIGHTSEEING
+    OTHER
+}
+
+type ItineraryActivity {
+    id: ID!
+    itineraryDayId: ID!
+    title: String!
+    description: String
+    type: ActivityType!
+    startTime: String
+    endTime: String
+    location: String
+    latitude: Float
+    longitude: Float
+    sortOrder: Int!
+    completed: Boolean!
+    createdAt: String!
+    updatedAt: String!
+}
+
+input CreateItineraryActivityInput {
+    title: String!
+    description: String
+    type: ActivityType!
+    startTime: String
+    endTime: String
+    location: String
+    latitude: Float
+    longitude: Float
+    sortOrder: Int
+}
+
+input UpdateItineraryActivityInput {
+    title: String
+    description: String
+    type: ActivityType
+    startTime: String
+    endTime: String
+    location: String
+    latitude: Float
+    longitude: Float
+    sortOrder: Int
+    completed: Boolean
+}
+
+extend type Query {
+    itineraryActivities(
+        tripId: ID!
+        itineraryDayId: ID!
+    ): [ItineraryActivity!]!
+
+    itineraryActivity(
+        tripId: ID!
+        itineraryDayId: ID!
+        activityId: ID!
+    ): ItineraryActivity!
+}
+
+extend type Mutation {
+    createItineraryActivity(
+        tripId: ID!
+        itineraryDayId: ID!
+        input: CreateItineraryActivityInput!
+    ): ItineraryActivity!
+
+    updateItineraryActivity(
+        tripId: ID!
+        itineraryDayId: ID!
+        activityId: ID!
+        input: UpdateItineraryActivityInput!
+    ): ItineraryActivity!
+
+    deleteItineraryActivity(
+        tripId: ID!
+        itineraryDayId: ID!
+        activityId: ID!
+    ): Boolean!
+
+    markItineraryActivityCompleted(
+        tripId: ID!
+        itineraryDayId: ID!
+        activityId: ID!
+        completed: Boolean!
+    ): ItineraryActivity!
+}
