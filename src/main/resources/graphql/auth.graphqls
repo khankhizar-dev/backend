@@ -358,3 +358,203 @@ extend type Mutation {
         completed: Boolean!
     ): ItineraryActivity!
 }
+
+enum BookingType {
+    FLIGHT
+    HOTEL
+    TRAIN
+    BUS
+    CAR_RENTAL
+    ACTIVITY
+    RESTAURANT
+    OTHER
+}
+
+enum BookingStatus {
+    PENDING
+    CONFIRMED
+    CANCELLED
+    COMPLETED
+    REFUNDED
+    FAILED
+}
+
+enum BookingSource {
+    MANUAL
+    EMAIL
+    PNR
+    TICKET_SCAN
+}
+
+type Booking {
+    id: ID!
+    tripId: ID!
+    itineraryDayId: ID
+    createdBy: ID!
+
+    type: BookingType!
+    status: BookingStatus!
+
+    title: String!
+    provider: String
+    bookingReference: String
+
+    startAt: String
+    endAt: String
+
+    location: String
+
+    amount: Float
+    currency: String
+
+    source: BookingSource!
+
+    notes: String
+    details: String
+
+    createdAt: String!
+    updatedAt: String!
+}
+
+type BookingTraveller {
+    id: ID!
+    bookingId: ID!
+
+    firstName: String!
+    lastName: String
+    email: String
+    phoneNumber: String
+    dateOfBirth: String
+    ticketNumber: String
+    seatNumber: String
+
+    createdAt: String!
+    updatedAt: String!
+}
+
+type BookingEvent {
+    id: ID!
+    bookingId: ID!
+    eventType: String!
+    description: String
+    metadata: String
+    createdBy: ID
+    createdAt: String!
+}
+
+input CreateBookingInput {
+    itineraryDayId: ID
+    type: BookingType!
+    title: String!
+    provider: String
+    bookingReference: String
+    startAt: String
+    endAt: String
+    location: String
+    amount: Float
+    currency: String
+    notes: String
+    details: String
+}
+
+input UpdateBookingInput {
+    type: BookingType
+    title: String
+    provider: String
+    bookingReference: String
+    startAt: String
+    endAt: String
+    location: String
+    amount: Float
+    currency: String
+    status: BookingStatus
+    notes: String
+    details: String
+}
+
+extend type Query {
+    bookings(
+            tripId: ID!
+            filter: BookingFilterInput
+        ): [Booking!]!
+
+    booking(
+        tripId: ID!
+        bookingId: ID!
+    ): Booking!
+
+    bookingTravellers(
+        tripId: ID!
+        bookingId: ID!
+    ): [BookingTraveller!]!
+
+    bookingEvents(
+        tripId: ID!
+        bookingId: ID!
+    ): [BookingEvent!]!
+}
+
+extend type Mutation {
+    createBooking(
+        tripId: ID!
+        input: CreateBookingInput!
+    ): Booking!
+
+    updateBooking(
+        tripId: ID!
+        bookingId: ID!
+        input: UpdateBookingInput!
+    ): Booking!
+
+    deleteBooking(
+        tripId: ID!
+        bookingId: ID!
+    ): Boolean!
+}
+
+input CreateBookingTravellerInput {
+    firstName: String!
+    lastName: String
+    email: String
+    phoneNumber: String
+    dateOfBirth: String
+    ticketNumber: String
+    seatNumber: String
+}
+
+input UpdateBookingTravellerInput {
+    firstName: String
+    lastName: String
+    email: String
+    phoneNumber: String
+    dateOfBirth: String
+    ticketNumber: String
+    seatNumber: String
+}
+
+extend type Mutation {
+    addBookingTraveller(
+        tripId: ID!
+        bookingId: ID!
+        input: CreateBookingTravellerInput!
+    ): BookingTraveller!
+
+    updateBookingTraveller(
+        tripId: ID!
+        bookingId: ID!
+        travellerId: ID!
+        input: UpdateBookingTravellerInput!
+    ): BookingTraveller!
+
+    deleteBookingTraveller(
+        tripId: ID!
+        bookingId: ID!
+        travellerId: ID!
+    ): Boolean!
+}
+
+input BookingFilterInput {
+    type: BookingType
+    status: BookingStatus
+    search: String
+}
