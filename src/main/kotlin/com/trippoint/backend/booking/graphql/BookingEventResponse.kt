@@ -1,5 +1,6 @@
 package com.trippoint.backend.booking.graphql
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.trippoint.backend.booking.entity.BookingEvent
 import java.time.LocalDateTime
 import java.util.UUID
@@ -9,7 +10,7 @@ data class BookingEventResponse(
     val bookingId: UUID,
     val eventType: String,
     val description: String?,
-    val metadata: String?,
+    val metadata: JsonNode?,
     val createdBy: UUID?,
     val createdAt: LocalDateTime
 ) {
