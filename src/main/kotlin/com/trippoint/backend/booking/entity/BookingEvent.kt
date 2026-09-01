@@ -1,10 +1,13 @@
 package com.trippoint.backend.booking.entity
 
+import com.fasterxml.jackson.databind.JsonNode
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
 import jakarta.persistence.Index
 import jakarta.persistence.Table
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -37,8 +40,9 @@ class BookingEvent(
     @Column(length = 500)
     var description: String? = null,
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
-    var metadata: String? = null,
+    var metadata: JsonNode? = null,
 
     @Column(name = "created_by")
     var createdBy: UUID? = null,

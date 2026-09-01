@@ -1,5 +1,7 @@
 package com.trippoint.backend.booking.service
 
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.trippoint.backend.booking.entity.Booking
 import com.trippoint.backend.booking.entity.BookingEvent
 import com.trippoint.backend.booking.entity.BookingTraveller
@@ -23,13 +25,15 @@ import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
+import kotlin.let
 
 @Service
 class BookingService(
     private val bookingRepository: BookingRepository,
     private val bookingTravellerRepository: BookingTravellerRepository,
     private val bookingEventRepository: BookingEventRepository,
-    private val tripRepository: TripRepository
+    private val tripRepository: TripRepository,
+    private val objectMapper: ObjectMapper
 ) {
 
     @Transactional
@@ -116,7 +120,9 @@ class BookingService(
                 notes = input.notes
                     ?.trim()
                     ?.takeIf { it.isNotBlank() },
-                details = input.details
+                details = input.details?.let {
+                    objectMapper.valueToTree<JsonNode>(it)
+                }
             )
         )
 
@@ -340,7 +346,7 @@ class BookingService(
         }
 
         input.details?.let {
-            booking.details = it
+            booking.details = objectMapper.valueToTree<JsonNode>(it)
         }
 
         booking.updatedAt = LocalDateTime.now()

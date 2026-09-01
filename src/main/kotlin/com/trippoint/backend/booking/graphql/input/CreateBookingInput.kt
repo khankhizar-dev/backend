@@ -1,5 +1,6 @@
 package com.trippoint.backend.booking.graphql.input
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.trippoint.backend.booking.model.BookingType
 import java.math.BigDecimal
 
@@ -15,5 +16,5 @@ data class CreateBookingInput(
     val amount: BigDecimal? = null,
     val currency: String? = null,
     val notes: String? = null,
-    val details: String? = null
+    val details: Map<String, Any?>? = null
 )
