@@ -1,5 +1,6 @@
 package com.trippoint.backend.booking.graphql
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.trippoint.backend.booking.entity.Booking
 import com.trippoint.backend.booking.model.BookingSource
 import com.trippoint.backend.booking.model.BookingStatus
@@ -25,7 +26,7 @@ data class BookingResponse(
     val currency: String?,
     val source: BookingSource,
     val notes: String?,
-    val details: String?,
+    val details: JsonNode?,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime
 ) {

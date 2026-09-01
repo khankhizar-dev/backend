@@ -370,6 +370,8 @@ enum BookingType {
     OTHER
 }
 
+scalar JSON
+
 enum BookingStatus {
     PENDING
     CONFIRMED
@@ -410,7 +412,7 @@ type Booking {
     source: BookingSource!
 
     notes: String
-    details: String
+    details: JSON
 
     createdAt: String!
     updatedAt: String!
@@ -454,7 +456,7 @@ input CreateBookingInput {
     amount: Float
     currency: String
     notes: String
-    details: String
+    details: JSON
 }
 
 input UpdateBookingInput {
@@ -469,7 +471,7 @@ input UpdateBookingInput {
     currency: String
     status: BookingStatus
     notes: String
-    details: String
+    details: JSON
 }
 
 extend type Query {
