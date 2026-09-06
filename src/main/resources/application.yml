@@ -23,6 +23,10 @@ spring:
   flyway:
     enabled: true
 
+  trippoint:
+    document:
+      storage-path: ./storage/documents
+
   jackson:
     time-zone: Asia/Kolkata
     default-property-inclusion: non_null
@@ -35,6 +39,11 @@ spring:
       path: /graphql/ws
     http:
       path: /graphql
+
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
 
 server:
   port: 8081

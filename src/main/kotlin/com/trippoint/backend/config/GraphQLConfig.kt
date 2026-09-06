@@ -14,6 +14,7 @@ class GraphQLConfig {
             wiringBuilder
                 .scalar(ExtendedScalars.Json)
                 .scalar(ExtendedScalars.GraphQLBigDecimal)
+                .scalar(ExtendedScalars.GraphQLLong)
         }
     }
 }
