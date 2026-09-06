@@ -23,8 +23,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
-import org.mockito.kotlin.doThrow
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
