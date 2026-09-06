@@ -1,0 +1,232 @@
+scalar BigDecimal
+
+enum ExpenseCategory {
+    FLIGHT
+    HOTEL
+    FOOD
+    TRANSPORT
+    ACTIVITY
+    SHOPPING
+    VISA
+    INSURANCE
+    OTHER
+}
+
+enum PaymentMethod {
+    CASH
+    CREDIT_CARD
+    DEBIT_CARD
+    UPI
+    BANK_TRANSFER
+    OTHER
+}
+
+type Budget {
+    id: ID!
+    tripId: ID!
+    totalAmount: BigDecimal!
+    currency: String!
+    locked: Boolean!
+    createdBy: ID!
+    createdAt: String!
+    updatedAt: String!
+}
+
+type Expense {
+    id: ID!
+    tripId: ID!
+    budgetId: ID!
+    bookingId: ID
+    category: ExpenseCategory!
+    title: String!
+    description: String
+    amount: BigDecimal!
+    currency: String!
+    exchangeRate: BigDecimal
+    convertedAmount: BigDecimal
+    expenseDate: String!
+    paymentMethod: PaymentMethod
+    paidBy: ID!
+    createdBy: ID!
+    recurring: Boolean!
+    recurrenceRule: String
+    archived: Boolean!
+    createdAt: String!
+    updatedAt: String!
+}
+
+type CategorySpending {
+    category: ExpenseCategory!
+    amount: BigDecimal!
+}
+
+type BudgetSummary {
+    budget: Budget!
+    spentAmount: BigDecimal!
+    remainingAmount: BigDecimal!
+    expenseCount: Int!
+    categoryBreakdown: [CategorySpending!]!
+}
+
+input CreateBudgetInput {
+    totalAmount: BigDecimal!
+    currency: String!
+}
+
+input UpdateBudgetInput {
+    totalAmount: BigDecimal
+    currency: String
+}
+
+input CreateExpenseInput {
+    bookingId: ID
+    category: ExpenseCategory!
+    title: String!
+    description: String
+    amount: BigDecimal!
+    currency: String!
+    expenseDate: String!
+    paymentMethod: PaymentMethod
+    paidBy: ID!
+    recurring: Boolean
+    recurrenceRule: String
+}
+
+input UpdateExpenseInput {
+    category: ExpenseCategory
+    title: String
+    description: String
+    amount: BigDecimal
+    currency: String
+    expenseDate: String
+    paymentMethod: PaymentMethod
+    paidBy: ID
+    bookingId: ID
+    recurring: Boolean
+    recurrenceRule: String
+}
+
+input ExpenseFilterInput {
+    search: String
+    category: ExpenseCategory
+    minAmount: BigDecimal
+    maxAmount: BigDecimal
+    fromDate: String
+    toDate: String
+    includeArchived: Boolean
+}
+
+extend type Query {
+    budget(tripId: ID!): Budget
+    expenses(
+        tripId: ID!
+        filter: ExpenseFilterInput
+    ): [Expense!]!
+
+    expense(
+        tripId: ID!
+        expenseId: ID!
+    ): Expense
+
+    budgetSummary(
+        tripId: ID!
+    ): BudgetSummary!
+
+    budgetOverview(
+    tripId: ID!
+    ): BudgetOverview!
+
+    settlementSummary(
+    tripId: ID!
+    ): SettlementSummary!
+
+}
+
+extend type Mutation {
+    createBudget(
+        tripId: ID!
+        input: CreateBudgetInput!
+    ): Budget!
+
+    updateBudget(
+        tripId: ID!
+        input: UpdateBudgetInput!
+    ): Budget!
+
+    createExpense(
+        tripId: ID!
+        input: CreateExpenseInput!
+    ): Expense!
+
+    updateExpense(
+        tripId: ID!
+        expenseId: ID!
+        input: UpdateExpenseInput!
+    ): Expense!
+
+    archiveExpense(
+        tripId: ID!
+        expenseId: ID!
+    ): Expense!
+}
+
+type BudgetOverview {
+    budget: BigDecimal!
+    spent: BigDecimal!
+    remaining: BigDecimal!
+    percentageUsed: BigDecimal!
+    expenseCount: Long!
+    categoryBreakdown: [CategoryBreakdown!]!
+}
+
+type CategoryBreakdown {
+    category: ExpenseCategory!
+    amount: BigDecimal!
+    percentage: BigDecimal!
+}
+
+type DailyExpenseReport {
+    date: String!
+    amount: BigDecimal!
+    expenseCount: Long!
+}
+
+dailyExpenseReport(
+    tripId: ID!,
+    fromDate: String!,
+    toDate: String!
+): [DailyExpenseReport!]!
+
+type CategoryExpenseReport {
+    category: ExpenseCategory!
+    amount: BigDecimal!
+    percentage: BigDecimal!
+    expenseCount: Long!
+}
+
+categoryExpenseReport(
+    tripId: ID!,
+    fromDate: String!,
+    toDate: String!
+): [CategoryExpenseReport!]!
+
+type SettlementSummary {
+    totalExpense: BigDecimal!
+    memberCount: Int!
+    equalShare: BigDecimal!
+    members: [MemberSettlement!]!
+    settlements: [SettlementTransfer!]!
+}
+
+type MemberSettlement {
+    userId: ID!
+    paidAmount: BigDecimal!
+    shareAmount: BigDecimal!
+    balance: BigDecimal!
+}
+
+type SettlementTransfer {
+    fromUserId: ID!
+    toUserId: ID!
+    amount: BigDecimal!
+}
