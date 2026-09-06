@@ -9,9 +9,11 @@ import org.springframework.graphql.execution.RuntimeWiringConfigurer
 class GraphQLConfig {
 
     @Bean
-    fun jsonScalarConfigurer(): RuntimeWiringConfigurer {
+    fun runtimeWiringConfigurer(): RuntimeWiringConfigurer {
         return RuntimeWiringConfigurer { wiringBuilder ->
-            wiringBuilder.scalar(ExtendedScalars.Json)
+            wiringBuilder
+                .scalar(ExtendedScalars.Json)
+                .scalar(ExtendedScalars.GraphQLBigDecimal)
         }
     }
 }
