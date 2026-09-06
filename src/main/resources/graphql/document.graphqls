@@ -1,0 +1,107 @@
+enum DocumentCategory {
+    PASSPORT_VISA
+    TICKETS_BOARDING
+    ID_PROOF
+    HOTEL_VOUCHER
+    INSURANCE
+    OTHER
+}
+
+enum DocumentSource {
+    DEVICE
+    CAMERA
+    SCAN
+    CLOUD
+}
+
+enum DocumentStatus {
+    ACTIVE
+    TRASHED
+}
+
+type Document {
+    id: ID!
+    tripId: ID!
+    uploadedBy: ID!
+
+    name: String!
+    originalFileName: String!
+    mimeType: String!
+    fileSize: Long!
+    storageKey: String!
+
+    category: DocumentCategory!
+    source: DocumentSource!
+    status: DocumentStatus!
+
+    description: String
+    documentNumber: String
+    issuedBy: String
+    issuedDate: String
+    expiryDate: String
+
+    favorite: Boolean!
+
+    createdAt: String!
+    updatedAt: String!
+}
+
+input DocumentFilterInput {
+    category: DocumentCategory
+    includeTrashed: Boolean
+    onlyFavorites: Boolean
+    onlyMine: Boolean
+}
+
+extend type Query {
+
+    documents(
+        tripId: ID!
+        filter: DocumentFilterInput
+    ): [Document!]!
+
+    document(
+        tripId: ID!
+        documentId: ID!
+    ): Document
+}
+
+extend type Mutation {
+
+    updateDocument(
+        tripId: ID!
+        documentId: ID!
+        input: UpdateDocumentInput!
+    ): Document!
+
+    favoriteDocument(
+        tripId: ID!
+        documentId: ID!
+        favorite: Boolean!
+    ): Document!
+
+    trashDocument(
+        tripId: ID!
+        documentId: ID!
+    ): Document!
+
+    restoreDocument(
+        tripId: ID!
+        documentId: ID!
+    ): Document!
+
+    permanentlyDeleteDocument(
+        tripId: ID!
+        documentId: ID!
+    ): Boolean!
+}
+
+input UpdateDocumentInput {
+    name: String
+    category: DocumentCategory
+    description: String
+    documentNumber: String
+    issuedBy: String
+    issuedDate: String
+    expiryDate: String
+}

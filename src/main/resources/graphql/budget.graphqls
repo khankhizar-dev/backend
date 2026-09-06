@@ -1,4 +1,5 @@
 scalar BigDecimal
+scalar Long
 
 enum ExpenseCategory {
     FLIGHT
@@ -116,8 +117,61 @@ input ExpenseFilterInput {
     includeArchived: Boolean
 }
 
+type BudgetOverview {
+    budget: BigDecimal!
+    spent: BigDecimal!
+    remaining: BigDecimal!
+    percentageUsed: BigDecimal!
+    expenseCount: Long!
+    categoryBreakdown: [CategoryBreakdown!]!
+}
+
+type CategoryBreakdown {
+    category: ExpenseCategory!
+    amount: BigDecimal!
+    percentage: BigDecimal!
+}
+
+type DailyExpenseReport {
+    date: String!
+    amount: BigDecimal!
+    expenseCount: Long!
+}
+
+type CategoryExpenseReport {
+    category: ExpenseCategory!
+    amount: BigDecimal!
+    percentage: BigDecimal!
+    expenseCount: Long!
+}
+
+type SettlementSummary {
+    totalExpense: BigDecimal!
+    memberCount: Int!
+    equalShare: BigDecimal!
+    members: [MemberSettlement!]!
+    settlements: [SettlementTransfer!]!
+}
+
+type MemberSettlement {
+    userId: ID!
+    paidAmount: BigDecimal!
+    shareAmount: BigDecimal!
+    balance: BigDecimal!
+}
+
+type SettlementTransfer {
+    fromUserId: ID!
+    toUserId: ID!
+    amount: BigDecimal!
+}
+
 extend type Query {
-    budget(tripId: ID!): Budget
+
+    budget(
+        tripId: ID!
+    ): Budget
+
     expenses(
         tripId: ID!
         filter: ExpenseFilterInput
@@ -133,16 +187,28 @@ extend type Query {
     ): BudgetSummary!
 
     budgetOverview(
-    tripId: ID!
+        tripId: ID!
     ): BudgetOverview!
 
-    settlementSummary(
-    tripId: ID!
-    ): SettlementSummary!
+    dailyExpenseReport(
+        tripId: ID!
+        fromDate: String!
+        toDate: String!
+    ): [DailyExpenseReport!]!
 
+    categoryExpenseReport(
+        tripId: ID!
+        fromDate: String!
+        toDate: String!
+    ): [CategoryExpenseReport!]!
+
+    settlementSummary(
+        tripId: ID!
+    ): SettlementSummary!
 }
 
 extend type Mutation {
+
     createBudget(
         tripId: ID!
         input: CreateBudgetInput!
@@ -168,65 +234,4 @@ extend type Mutation {
         tripId: ID!
         expenseId: ID!
     ): Expense!
-}
-
-type BudgetOverview {
-    budget: BigDecimal!
-    spent: BigDecimal!
-    remaining: BigDecimal!
-    percentageUsed: BigDecimal!
-    expenseCount: Long!
-    categoryBreakdown: [CategoryBreakdown!]!
-}
-
-type CategoryBreakdown {
-    category: ExpenseCategory!
-    amount: BigDecimal!
-    percentage: BigDecimal!
-}
-
-type DailyExpenseReport {
-    date: String!
-    amount: BigDecimal!
-    expenseCount: Long!
-}
-
-dailyExpenseReport(
-    tripId: ID!,
-    fromDate: String!,
-    toDate: String!
-): [DailyExpenseReport!]!
-
-type CategoryExpenseReport {
-    category: ExpenseCategory!
-    amount: BigDecimal!
-    percentage: BigDecimal!
-    expenseCount: Long!
-}
-
-categoryExpenseReport(
-    tripId: ID!,
-    fromDate: String!,
-    toDate: String!
-): [CategoryExpenseReport!]!
-
-type SettlementSummary {
-    totalExpense: BigDecimal!
-    memberCount: Int!
-    equalShare: BigDecimal!
-    members: [MemberSettlement!]!
-    settlements: [SettlementTransfer!]!
-}
-
-type MemberSettlement {
-    userId: ID!
-    paidAmount: BigDecimal!
-    shareAmount: BigDecimal!
-    balance: BigDecimal!
-}
-
-type SettlementTransfer {
-    fromUserId: ID!
-    toUserId: ID!
-    amount: BigDecimal!
 }
