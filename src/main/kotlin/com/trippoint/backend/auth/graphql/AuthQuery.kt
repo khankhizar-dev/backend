@@ -22,8 +22,8 @@ class AuthQuery(
 
     @QueryMapping
     fun me(authentication: Authentication?): UserResponse {
-        val auth = authentication ?: SecurityContextHolder.getContext().authentication
-        ?: throw IllegalArgumentException("User not authenticated")
+        val auth = authentication
+            ?: throw IllegalArgumentException("User not authenticated")
 
         val principal = auth.principal as? UserPrincipal
             ?: throw IllegalArgumentException("Invalid authentication principal")

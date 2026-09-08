@@ -1,5 +1,6 @@
 package com.trippoint.backend.budget.graphql
 
+import com.trippoint.backend.auth.security.UserPrincipal
 import com.trippoint.backend.budget.entity.BudgetOverview
 import com.trippoint.backend.budget.graphql.input.CreateBudgetInput
 import com.trippoint.backend.budget.graphql.input.UpdateBudgetInput
@@ -11,6 +12,7 @@ import org.springframework.graphql.data.method.annotation.Argument
 import org.springframework.graphql.data.method.annotation.MutationMapping
 import org.springframework.graphql.data.method.annotation.QueryMapping
 import org.springframework.security.core.Authentication
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.stereotype.Controller
 import java.time.LocalDate
 import java.util.UUID
@@ -22,15 +24,13 @@ class BudgetGraphQLController(
 
     @QueryMapping
     fun budget(
-        @Argument tripId: UUID,
-        authentication: Authentication?
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @Argument tripId: UUID
     ): BudgetResponse {
-
-        val userId = requireUserId(authentication)
 
         return BudgetResponse.from(
             budgetService.getBudget(
-                userId = userId,
+                userId = principal.userId,
                 tripId = tripId
             )
         )
@@ -38,33 +38,31 @@ class BudgetGraphQLController(
 
     @QueryMapping
     fun budgetSummary(
-        @Argument tripId: UUID,
-        authentication: Authentication?
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @Argument tripId: UUID
     ): BudgetSummaryResponse {
 
-        val userId = requireUserId(authentication)
-
         val budget = budgetService.getBudget(
-            userId = userId,
+            userId = principal.userId,
             tripId = tripId
         )
 
         return BudgetSummaryResponse(
             budget = BudgetResponse.from(budget),
             spentAmount = budgetService.getSpentAmount(
-                userId = userId,
+                userId = principal.userId,
                 tripId = tripId
             ),
             remainingAmount = budgetService.getRemainingAmount(
-                userId = userId,
+                userId = principal.userId,
                 tripId = tripId
             ),
             expenseCount = budgetService.getExpenseCount(
-                userId = userId,
+                userId = principal.userId,
                 tripId = tripId
             ),
             categoryBreakdown = budgetService
-                .getCategoryBreakdown(userId, tripId)
+                .getCategoryBreakdown(principal.userId, tripId)
                 .map { (category, amount) ->
                     CategorySpendingResponse(
                         category = category,
@@ -76,16 +74,15 @@ class BudgetGraphQLController(
 
     @MutationMapping
     fun createBudget(
+        @AuthenticationPrincipal principal: UserPrincipal,
         @Argument tripId: UUID,
-        @Argument input: CreateBudgetInput,
-        authentication: Authentication?
+        @Argument input: CreateBudgetInput
     ): BudgetResponse {
 
-        val userId = requireUserId(authentication)
 
         return BudgetResponse.from(
             budgetService.createBudget(
-                userId = userId,
+                userId = principal.userId,
                 tripId = tripId,
                 input = input
             )
@@ -94,16 +91,14 @@ class BudgetGraphQLController(
 
     @MutationMapping
     fun updateBudget(
+        @AuthenticationPrincipal principal: UserPrincipal,
         @Argument tripId: UUID,
-        @Argument input: UpdateBudgetInput,
-        authentication: Authentication?
+        @Argument input: UpdateBudgetInput
     ): BudgetResponse {
-
-        val userId = requireUserId(authentication)
 
         return BudgetResponse.from(
             budgetService.updateBudget(
-                userId = userId,
+                userId = principal.userId,
                 tripId = tripId,
                 input = input
             )
@@ -112,59 +107,42 @@ class BudgetGraphQLController(
 
     @QueryMapping
     fun budgetOverview(
-        @Argument tripId: UUID,
-        authentication: Authentication?
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @Argument tripId: UUID
     ): BudgetOverview {
 
-        val userId = requireUserId(authentication)
-
         return budgetService.getOverview(
-            userId = userId,
+            userId = principal.userId,
             tripId = tripId
         )
     }
 
     @QueryMapping
     fun dailyExpenseReport(
+        @AuthenticationPrincipal principal: UserPrincipal,
         @Argument tripId: UUID,
         @Argument fromDate: String,
-        @Argument toDate: String,
-        authentication: Authentication?
+        @Argument toDate: String
     ): List<DailyExpenseReport> {
 
-        val userId = requireUserId(authentication)
-
         return budgetService.getDailyExpenseReport(
-            userId = userId,
+            userId = principal.userId,
             tripId = tripId,
             fromDate = LocalDate.parse(fromDate),
             toDate = LocalDate.parse(toDate)
         )
     }
 
-    private fun requireUserId(
-        authentication: Authentication?
-    ): UUID {
-
-        require(authentication?.isAuthenticated == true) {
-            "Authentication required"
-        }
-
-        return UUID.fromString(authentication.name)
-    }
-
     @QueryMapping
     fun categoryExpenseReport(
+        @AuthenticationPrincipal principal: UserPrincipal,
         @Argument tripId: UUID,
         @Argument fromDate: String,
-        @Argument toDate: String,
-        authentication: Authentication?
+        @Argument toDate: String
     ): List<CategoryExpenseReport> {
 
-        val userId = requireUserId(authentication)
-
         return budgetService.getCategoryExpenseReport(
-            userId = userId,
+            userId = principal.userId,
             tripId = tripId,
             fromDate = LocalDate.parse(fromDate),
             toDate = LocalDate.parse(toDate)
@@ -173,14 +151,12 @@ class BudgetGraphQLController(
 
     @QueryMapping
     fun settlementSummary(
-        @Argument tripId: UUID,
-        authentication: Authentication?
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @Argument tripId: UUID
     ): SettlementSummary {
 
-        val userId = requireUserId(authentication)
-
         return budgetService.getSettlementSummary(
-            userId = userId,
+            userId = principal.userId,
             tripId = tripId
         )
     }

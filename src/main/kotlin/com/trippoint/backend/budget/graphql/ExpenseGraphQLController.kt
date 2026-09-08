@@ -1,5 +1,6 @@
 package com.trippoint.backend.budget.graphql
 
+import com.trippoint.backend.auth.security.UserPrincipal
 import com.trippoint.backend.budget.graphql.input.CreateExpenseInput
 import com.trippoint.backend.budget.graphql.input.ExpenseFilterInput
 import com.trippoint.backend.budget.graphql.input.UpdateExpenseInput
@@ -116,6 +117,9 @@ class ExpenseGraphQLController(
             "Authentication required"
         }
 
-        return UUID.fromString(authentication.name)
+        val principal = authentication.principal as? UserPrincipal
+            ?: throw IllegalArgumentException("Invalid authentication principal")
+
+        return principal.userId
     }
 }
