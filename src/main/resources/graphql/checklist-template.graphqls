@@ -1,0 +1,146 @@
+enum ChecklistTemplateType {
+    SYSTEM
+    USER
+    TRIP
+}
+
+type ChecklistTemplate {
+    id: ID!
+    createdBy: ID
+    name: String!
+    description: String
+    type: ChecklistTemplateType!
+    status: ChecklistStatus!
+    sections: [ChecklistTemplateSection!]!
+    createdAt: String!
+    updatedAt: String!
+}
+
+type ChecklistTemplateSection {
+    id: ID!
+    templateId: ID!
+    name: String!
+    position: Int!
+    items: [ChecklistTemplateItem!]!
+    createdAt: String!
+    updatedAt: String!
+}
+
+type ChecklistTemplateItem {
+    id: ID!
+    sectionId: ID!
+    name: String!
+    category: ChecklistItemCategory!
+    essential: Boolean!
+    position: Int!
+    createdAt: String!
+    updatedAt: String!
+}
+
+input CreateChecklistTemplateInput {
+    name: String!
+    description: String
+}
+
+input UpdateChecklistTemplateInput {
+    name: String
+    description: String
+}
+
+input CreateChecklistTemplateSectionInput {
+    name: String!
+}
+
+input UpdateChecklistTemplateSectionInput {
+    name: String!
+}
+
+input CreateChecklistTemplateItemInput {
+    name: String!
+    category: ChecklistItemCategory!
+    essential: Boolean
+}
+
+input UpdateChecklistTemplateItemInput {
+    name: String
+    category: ChecklistItemCategory
+    essential: Boolean
+}
+
+input CreateChecklistFromTemplateInput {
+    name: String
+    description: String
+}
+
+input SaveChecklistAsTemplateInput {
+    name: String!
+    description: String
+}
+
+extend type Query {
+    checklistTemplates: [ChecklistTemplate!]!
+    checklistTemplate(templateId: ID!): ChecklistTemplate
+}
+
+extend type Mutation {
+
+    createChecklistTemplate(
+        input: CreateChecklistTemplateInput!
+    ): ChecklistTemplate!
+
+    updateChecklistTemplate(
+        templateId: ID!
+        input: UpdateChecklistTemplateInput!
+    ): ChecklistTemplate!
+
+    archiveChecklistTemplate(
+        templateId: ID!
+    ): ChecklistTemplate!
+
+    createChecklistTemplateSection(
+        templateId: ID!
+        input: CreateChecklistTemplateSectionInput!
+    ): ChecklistTemplateSection!
+
+    updateChecklistTemplateSection(
+        templateId: ID!
+        sectionId: ID!
+        input: UpdateChecklistTemplateSectionInput!
+    ): ChecklistTemplateSection!
+
+    deleteChecklistTemplateSection(
+        templateId: ID!
+        sectionId: ID!
+    ): Boolean!
+
+    addChecklistTemplateItem(
+        templateId: ID!
+        sectionId: ID!
+        input: CreateChecklistTemplateItemInput!
+    ): ChecklistTemplateItem!
+
+    updateChecklistTemplateItem(
+        templateId: ID!
+        sectionId: ID!
+        itemId: ID!
+        input: UpdateChecklistTemplateItemInput!
+    ): ChecklistTemplateItem!
+
+    deleteChecklistTemplateItem(
+        templateId: ID!
+        sectionId: ID!
+        itemId: ID!
+    ): Boolean!
+
+    saveChecklistAsTemplate(
+        tripId: ID!
+        checklistId: ID!
+        input: SaveChecklistAsTemplateInput!
+    ): ChecklistTemplate!
+
+    createChecklistFromTemplate(
+        tripId: ID!
+        templateId: ID!
+        input: CreateChecklistFromTemplateInput
+    ): Checklist!
+}

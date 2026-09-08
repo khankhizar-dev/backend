@@ -1,0 +1,176 @@
+enum ChecklistStatus {
+    ACTIVE
+    ARCHIVED
+}
+
+enum ChecklistItemCategory {
+    CLOTHING
+    DOCUMENTS
+    ELECTRONICS
+    HEALTH
+    TOILETRIES
+    OTHER
+}
+
+type Checklist {
+    id: ID!
+    tripId: ID!
+    createdBy: ID!
+    name: String!
+    description: String
+    status: ChecklistStatus!
+
+    totalItems: Int!
+    completedItems: Int!
+    progress: Int!
+
+    sections: [ChecklistSection!]!
+
+    createdAt: String!
+    updatedAt: String!
+}
+
+type ChecklistSection {
+    id: ID!
+    checklistId: ID!
+    name: String!
+    position: Int!
+
+    totalItems: Int!
+    completedItems: Int!
+    progress: Int!
+
+    items: [ChecklistItem!]!
+
+    createdAt: String!
+    updatedAt: String!
+}
+
+type ChecklistItem {
+    id: ID!
+    sectionId: ID!
+    createdBy: ID!
+
+    name: String!
+    category: ChecklistItemCategory!
+
+    essential: Boolean!
+    completed: Boolean!
+
+    dueDate: String
+    position: Int!
+
+    createdAt: String!
+    updatedAt: String!
+}
+
+input CreateChecklistInput {
+    name: String!
+    description: String
+}
+
+input UpdateChecklistInput {
+    name: String
+    description: String
+}
+
+input CreateChecklistSectionInput {
+    name: String!
+}
+
+input UpdateChecklistSectionInput {
+    name: String!
+}
+
+input CreateChecklistItemInput {
+    name: String!
+    category: ChecklistItemCategory!
+    essential: Boolean
+    dueDate: String
+}
+
+input UpdateChecklistItemInput {
+    name: String
+    category: ChecklistItemCategory
+    essential: Boolean
+    dueDate: String
+}
+
+extend type Query {
+    checklists(
+        tripId: ID!
+    ): [Checklist!]!
+
+    checklist(
+        tripId: ID!
+        checklistId: ID!
+    ): Checklist
+}
+
+extend type Mutation {
+
+    createChecklist(
+        tripId: ID!
+        input: CreateChecklistInput!
+    ): Checklist!
+
+    updateChecklist(
+        tripId: ID!
+        checklistId: ID!
+        input: UpdateChecklistInput!
+    ): Checklist!
+
+    archiveChecklist(
+        tripId: ID!
+        checklistId: ID!
+    ): Checklist!
+
+    createChecklistSection(
+        tripId: ID!
+        checklistId: ID!
+        input: CreateChecklistSectionInput!
+    ): ChecklistSection!
+
+    updateChecklistSection(
+        tripId: ID!
+        checklistId: ID!
+        sectionId: ID!
+        input: UpdateChecklistSectionInput!
+    ): ChecklistSection!
+
+    deleteChecklistSection(
+        tripId: ID!
+        checklistId: ID!
+        sectionId: ID!
+    ): Boolean!
+
+    addChecklistItem(
+        tripId: ID!
+        checklistId: ID!
+        sectionId: ID!
+        input: CreateChecklistItemInput!
+    ): ChecklistItem!
+
+    updateChecklistItem(
+        tripId: ID!
+        checklistId: ID!
+        sectionId: ID!
+        itemId: ID!
+        input: UpdateChecklistItemInput!
+    ): ChecklistItem!
+
+    completeChecklistItem(
+        tripId: ID!
+        checklistId: ID!
+        sectionId: ID!
+        itemId: ID!
+        completed: Boolean!
+    ): ChecklistItem!
+
+    deleteChecklistItem(
+        tripId: ID!
+        checklistId: ID!
+        sectionId: ID!
+        itemId: ID!
+    ): Boolean!
+}
