@@ -399,6 +399,22 @@ class ChecklistServiceTest {
 
     @Test
     fun `progress should calculate percentage correctly`() {
+
+        val checklist = Checklist(
+            id = checklistId,
+            tripId = tripId,
+            name = "Travel Checklist",
+            createdBy = userId,
+            status = ChecklistStatus.ACTIVE
+        )
+
+        whenever(
+            checklistRepository.findByIdAndTripId(
+                checklistId,
+                tripId
+            )
+        ).thenReturn(checklist)
+
         val section1 = ChecklistSection(
             id = UUID.randomUUID(),
             checklistId = checklistId,
@@ -414,22 +430,36 @@ class ChecklistServiceTest {
         )
 
         whenever(
-            sectionRepository.findAllByChecklistIdOrderByPositionAsc(checklistId)
+            sectionRepository.findAllByChecklistIdOrderByPositionAsc(
+                checklistId
+            )
         ).thenReturn(listOf(section1, section2))
 
         whenever(itemRepository.countBySectionId(section1.id))
             .thenReturn(4)
 
-        whenever(itemRepository.countBySectionIdAndCompleted(section1.id, true))
-            .thenReturn(3)
+        whenever(
+            itemRepository.countBySectionIdAndCompleted(
+                section1.id,
+                true
+            )
+        ).thenReturn(3)
 
         whenever(itemRepository.countBySectionId(section2.id))
             .thenReturn(6)
 
-        whenever(itemRepository.countBySectionIdAndCompleted(section2.id, true))
-            .thenReturn(2)
+        whenever(
+            itemRepository.countBySectionIdAndCompleted(
+                section2.id,
+                true
+            )
+        ).thenReturn(2)
 
-        val result = service.getChecklistProgress(checklistId)
+        val result = service.getChecklistProgress(
+            userId,
+            tripId,
+            checklistId
+        )
 
         assertEquals(10, result.totalItems)
         assertEquals(5, result.completedItems)
@@ -438,11 +468,33 @@ class ChecklistServiceTest {
 
     @Test
     fun `empty checklist should have zero progress`() {
+
+        val checklist = Checklist(
+            id = checklistId,
+            tripId = tripId,
+            name = "Travel Checklist",
+            createdBy = userId,
+            status = ChecklistStatus.ACTIVE
+        )
+
         whenever(
-            sectionRepository.findAllByChecklistIdOrderByPositionAsc(checklistId)
+            checklistRepository.findByIdAndTripId(
+                checklistId,
+                tripId
+            )
+        ).thenReturn(checklist)
+
+        whenever(
+            sectionRepository.findAllByChecklistIdOrderByPositionAsc(
+                checklistId
+            )
         ).thenReturn(emptyList())
 
-        val result = service.getChecklistProgress(checklistId)
+        val result = service.getChecklistProgress(
+            userId,
+            tripId,
+            checklistId
+        )
 
         assertEquals(0, result.totalItems)
         assertEquals(0, result.completedItems)

@@ -49,6 +49,8 @@ class ChecklistGraphQLController(
 
                 val progress =
                     checklistService.getChecklistProgress(
+                        userId = userId,
+                        tripId = tripUuid,
                         checklistId = checklist.id
                     )
 
@@ -84,6 +86,8 @@ class ChecklistGraphQLController(
 
         val progress =
             checklistService.getChecklistProgress(
+                userId = userId,
+                tripId = tripUuid,
                 checklistId = checklistUuid
             )
 
@@ -115,7 +119,10 @@ class ChecklistGraphQLController(
 
         return checklist.toResponse(
             sections = emptyList(),
-            progress = checklistService.getChecklistProgress(checklist.id)
+            progress = checklistService.getChecklistProgress(
+                userId = principal.userId,
+                tripId = tripUuid,
+                checklist.id)
         )
     }
 
@@ -360,7 +367,11 @@ class ChecklistGraphQLController(
         )
 
         val progress =
-            checklistService.getChecklistProgress(checklist.id)
+            checklistService.getChecklistProgress(
+                userId = userId,
+                tripId = tripId,
+                checklistId = checklist.id
+                )
 
         return checklist.toResponse(
             sections = sections,
@@ -405,7 +416,11 @@ class ChecklistGraphQLController(
         )
 
         val progress =
-            checklistService.getSectionProgress(section.id)
+            checklistService.getSectionProgress(
+                userId = userId,
+                tripId = tripId,
+                checklistId = checklistId,
+                sectionId = section.id)
 
         return section.toResponse(
             items = items,
