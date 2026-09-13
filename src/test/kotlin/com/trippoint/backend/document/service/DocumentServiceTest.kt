@@ -423,7 +423,6 @@ class DocumentServiceTest {
         ).thenReturn(document)
 
         assertThrows<IllegalAccessException> {
-
             service.trashDocument(
                 userId = memberId,
                 tripId = tripId,
@@ -431,8 +430,10 @@ class DocumentServiceTest {
             )
         }
 
-        verify(documentRepository, never())
-            .save(any(Document::class.java))
+        verify(
+            documentRepository,
+            never()
+        ).save(document)
     }
 
     @Test
@@ -570,7 +571,6 @@ class DocumentServiceTest {
         ).thenReturn(document)
 
         assertThrows<IllegalAccessException> {
-
             service.permanentlyDeleteDocument(
                 userId = memberId,
                 tripId = tripId,
@@ -578,11 +578,15 @@ class DocumentServiceTest {
             )
         }
 
-        verify(documentRepository, never())
-            .delete(any(Document::class.java))
+        verify(
+            documentRepository,
+            never()
+        ).delete(document)
 
-        verify(documentStorageService, never())
-            .delete(anyString())
+        verify(
+            documentStorageService,
+            never()
+        ).delete(document.storageKey)
     }
 
     @Test
@@ -890,6 +894,56 @@ class DocumentServiceTest {
                 documentId = documentId
             )
         }
+    }
+
+    @Test
+    fun `member can get documents`() {
+        mockAcceptedMember(memberId)
+
+        val documents = listOf(
+            createDocument(uploadedBy = memberId),
+            createDocument(uploadedBy = otherMemberId)
+        )
+
+        whenever(
+            documentRepository.findAllByTripIdAndStatusOrderByCreatedAtDesc(
+                tripId,
+                DocumentStatus.ACTIVE
+            )
+        ).thenReturn(documents)
+
+        val result = service.getDocuments(
+            userId = memberId,
+            tripId = tripId
+        )
+
+        assertEquals(documents, result)
+
+        verify(documentRepository)
+            .findAllByTripIdAndStatusOrderByCreatedAtDesc(
+                tripId,
+                DocumentStatus.ACTIVE
+            )
+    }
+
+    @Test
+    fun `non member cannot get documents`() {
+        mockNonMember(nonMemberId)
+
+        assertThrows<IllegalAccessException> {
+            service.getDocuments(
+                userId = nonMemberId,
+                tripId = tripId
+            )
+        }
+
+        verify(
+            documentRepository,
+            never()
+        ).findAllByTripIdAndStatusOrderByCreatedAtDesc(
+            tripId,
+            DocumentStatus.ACTIVE
+        )
     }
 
     // ---------------------------------------------------------
