@@ -19,6 +19,7 @@ import com.trippoint.backend.booking.repository.BookingEventRepository
 import com.trippoint.backend.booking.repository.BookingRepository
 import com.trippoint.backend.booking.repository.BookingTravellerRepository
 import com.trippoint.backend.trip.repository.TripRepository
+import com.trippoint.backend.trip.service.TripAccessService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -32,7 +33,7 @@ class BookingService(
     private val bookingRepository: BookingRepository,
     private val bookingTravellerRepository: BookingTravellerRepository,
     private val bookingEventRepository: BookingEventRepository,
-    private val tripRepository: TripRepository,
+    private val tripAccessService: TripAccessService,
     private val objectMapper: ObjectMapper
 ) {
 
@@ -43,10 +44,10 @@ class BookingService(
         input: CreateBookingInput
     ): BookingResponse {
 
-        tripRepository.findByIdAndOwnerId(
-            tripId,
-            userId
-        ) ?: throw IllegalArgumentException("Trip not found")
+        tripAccessService.requireMemberAccess(
+            tripId = tripId,
+            userId = userId
+        )
 
         val title = input.title.trim()
 
@@ -145,10 +146,10 @@ class BookingService(
         filter: BookingFilterInput? = null
     ): List<BookingResponse> {
 
-        tripRepository.findByIdAndOwnerId(
-            tripId,
-            userId
-        ) ?: throw IllegalArgumentException("Trip not found")
+        tripAccessService.requireMemberAccess(
+            tripId = tripId,
+            userId = userId
+        )
 
         val search = filter?.search
             ?.trim()
@@ -190,10 +191,10 @@ class BookingService(
         bookingId: UUID
     ): BookingResponse {
 
-        tripRepository.findByIdAndOwnerId(
-            tripId,
-            userId
-        ) ?: throw IllegalArgumentException("Trip not found")
+        tripAccessService.requireMemberAccess(
+            tripId = tripId,
+            userId = userId
+        )
 
         val booking = bookingRepository.findByIdAndTripId(
             bookingId,
@@ -212,10 +213,10 @@ class BookingService(
     ): BookingResponse {
         var statusChanged = false
 
-        tripRepository.findByIdAndOwnerId(
-            tripId,
-            userId
-        ) ?: throw IllegalArgumentException("Trip not found")
+        tripAccessService.requireMemberAccess(
+            tripId = tripId,
+            userId = userId
+        )
 
         val booking = bookingRepository.findByIdAndTripId(
             bookingId,
@@ -374,10 +375,10 @@ class BookingService(
         bookingId: UUID
     ): Boolean {
 
-        tripRepository.findByIdAndOwnerId(
-            tripId,
-            userId
-        ) ?: throw IllegalArgumentException("Trip not found")
+        tripAccessService.requireMemberAccess(
+            tripId = tripId,
+            userId = userId
+        )
 
         val booking = bookingRepository.findByIdAndTripId(
             bookingId,
@@ -440,10 +441,10 @@ class BookingService(
         bookingId: UUID
     ) {
 
-        tripRepository.findByIdAndOwnerId(
-            tripId,
-            userId
-        ) ?: throw IllegalArgumentException("Trip not found")
+        tripAccessService.requireMemberAccess(
+            tripId = tripId,
+            userId = userId
+        )
 
         bookingRepository.findByIdAndTripId(
             bookingId,

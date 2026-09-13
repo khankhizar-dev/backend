@@ -7,6 +7,7 @@ import com.trippoint.backend.itinerary.graphql.input.UpdateItineraryActivityInpu
 import com.trippoint.backend.itinerary.repository.ItineraryActivityRepository
 import com.trippoint.backend.itinerary.repository.ItineraryDayRepository
 import com.trippoint.backend.trip.repository.TripRepository
+import com.trippoint.backend.trip.service.TripAccessService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalTime
@@ -16,7 +17,7 @@ import java.util.UUID
 class ItineraryActivityService(
     private val itineraryActivityRepository: ItineraryActivityRepository,
     private val itineraryDayRepository: ItineraryDayRepository,
-    private val tripRepository: TripRepository
+    private val tripAccessService: TripAccessService
 ) {
 
     @Transactional
@@ -27,11 +28,11 @@ class ItineraryActivityService(
         input: CreateItineraryActivityInput
     ): ItineraryActivityResponse {
 
-        // 1. Verify trip ownership
-        tripRepository.findByIdAndOwnerId(
-            tripId,
-            userId
-        ) ?: throw IllegalArgumentException("Trip not found")
+        // 1. Verify trip membership
+        tripAccessService.requireMemberAccess(
+            tripId = tripId,
+            userId = userId
+        )
 
         // 2. Verify itinerary day belongs to the trip
         val day = itineraryDayRepository.findById(itineraryDayId)
@@ -317,10 +318,10 @@ class ItineraryActivityService(
         itineraryDayId: UUID
     ) {
 
-        tripRepository.findByIdAndOwnerId(
-            tripId,
-            userId
-        ) ?: throw IllegalArgumentException("Trip not found")
+        tripAccessService.requireMemberAccess(
+            tripId = tripId,
+            userId = userId
+        )
 
         val day = itineraryDayRepository.findById(itineraryDayId)
             .orElseThrow {

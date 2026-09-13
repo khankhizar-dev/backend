@@ -8,7 +8,12 @@ import com.trippoint.backend.itinerary.model.ActivityType
 import com.trippoint.backend.itinerary.repository.ItineraryActivityRepository
 import com.trippoint.backend.itinerary.repository.ItineraryDayRepository
 import com.trippoint.backend.trip.entity.Trip
+import com.trippoint.backend.trip.entity.TripMember
+import com.trippoint.backend.trip.model.TripMemberRole
+import com.trippoint.backend.trip.model.TripMemberStatus
+import com.trippoint.backend.trip.repository.TripMemberRepository
 import com.trippoint.backend.trip.repository.TripRepository
+import com.trippoint.backend.trip.service.TripAccessService
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -30,6 +35,7 @@ class ItineraryActivityServiceTest {
     private lateinit var activityRepository: ItineraryActivityRepository
     private lateinit var itineraryDayRepository: ItineraryDayRepository
     private lateinit var tripRepository: TripRepository
+    private lateinit var tripMemberRepository: TripMemberRepository
 
     private lateinit var service: ItineraryActivityService
 
@@ -44,11 +50,17 @@ class ItineraryActivityServiceTest {
         activityRepository = mockk()
         itineraryDayRepository = mockk()
         tripRepository = mockk()
+        tripMemberRepository = mockk()
+
+        val tripAccessService = TripAccessService(
+            tripRepository = tripRepository,
+            tripMemberRepository = tripMemberRepository
+        )
 
         service = ItineraryActivityService(
             activityRepository,
             itineraryDayRepository,
-            tripRepository
+            tripAccessService = tripAccessService
         )
     }
 
@@ -106,11 +118,10 @@ class ItineraryActivityServiceTest {
         )
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
+            tripRepository.findById(
+                tripId
             )
-        } returns trip()
+        } returns Optional.of(trip())
 
         every {
             itineraryDayRepository.findById(itineraryDayId)
@@ -145,11 +156,10 @@ class ItineraryActivityServiceTest {
     fun `create activity rejects non owner`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
+            tripRepository.findById(
+                tripId
             )
-        } returns null
+        } returns Optional.empty()
 
         val input = CreateItineraryActivityInput(
             title = "Burj Khalifa",
@@ -185,11 +195,10 @@ class ItineraryActivityServiceTest {
         }
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
+            tripRepository.findById(
+                tripId
             )
-        } returns trip()
+        } returns Optional.empty()
 
         every {
             itineraryDayRepository.findById(itineraryDayId)
@@ -225,11 +234,10 @@ class ItineraryActivityServiceTest {
     fun `create activity rejects blank title`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
+            tripRepository.findById(
+                tripId
             )
-        } returns trip()
+        } returns Optional.of(trip())
 
         every {
             itineraryDayRepository.findById(itineraryDayId)
@@ -261,11 +269,10 @@ class ItineraryActivityServiceTest {
     fun `create activity rejects end time before start time`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
+            tripRepository.findById(
+                tripId
             )
-        } returns trip()
+        } returns Optional.of(trip())
 
         every {
             itineraryDayRepository.findById(itineraryDayId)
@@ -297,11 +304,10 @@ class ItineraryActivityServiceTest {
     fun `create activity rejects negative sort order`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
+            tripRepository.findById(
+                tripId
             )
-        } returns trip()
+        } returns Optional.of(trip())
 
         every {
             itineraryDayRepository.findById(itineraryDayId)
@@ -333,11 +339,10 @@ class ItineraryActivityServiceTest {
     fun `create activity rejects invalid latitude`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
+            tripRepository.findById(
+                tripId
             )
-        } returns trip()
+        } returns Optional.of(trip())
 
         every {
             itineraryDayRepository.findById(itineraryDayId)
@@ -369,11 +374,10 @@ class ItineraryActivityServiceTest {
 fun `create activity rejects invalid longitude`() {
 
     every {
-        tripRepository.findByIdAndOwnerId(
-            tripId,
-            userId
+        tripRepository.findById(
+            tripId
         )
-    } returns trip()
+    } returns Optional.of(trip())
 
     every {
         itineraryDayRepository.findById(itineraryDayId)
@@ -410,11 +414,10 @@ fun `create activity rejects invalid longitude`() {
 fun `get activities successfully`() {
 
     every {
-        tripRepository.findByIdAndOwnerId(
-            tripId,
-            userId
+        tripRepository.findById(
+            tripId
         )
-    } returns trip()
+    } returns Optional.of(trip())
 
     every {
         itineraryDayRepository.findById(itineraryDayId)
@@ -441,11 +444,10 @@ fun `get activities successfully`() {
 fun `get activities rejects unauthorized trip`() {
 
     every {
-        tripRepository.findByIdAndOwnerId(
-            tripId,
-            userId
+        tripRepository.findById(
+            tripId
         )
-    } returns null
+    } returns Optional.empty()
 
     assertThrows<IllegalArgumentException> {
         service.getActivities(
@@ -468,11 +470,10 @@ fun `get activities rejects unauthorized trip`() {
 fun `get activity successfully`() {
 
     every {
-        tripRepository.findByIdAndOwnerId(
-            tripId,
-            userId
+        tripRepository.findById(
+            tripId
         )
-    } returns trip()
+    } returns Optional.of(trip())
 
     every {
         itineraryDayRepository.findById(itineraryDayId)
@@ -500,11 +501,10 @@ fun `get activity successfully`() {
 fun `get activity rejects missing activity`() {
 
     every {
-        tripRepository.findByIdAndOwnerId(
-            tripId,
-            userId
+        tripRepository.findById(
+            tripId
         )
-    } returns trip()
+    } returns Optional.of(trip())
 
     every {
         itineraryDayRepository.findById(itineraryDayId)
@@ -537,11 +537,10 @@ fun `update activity successfully`() {
     val existingActivity = activity()
 
     every {
-        tripRepository.findByIdAndOwnerId(
-            tripId,
-            userId
+        tripRepository.findById(
+            tripId
         )
-    } returns trip()
+    } returns Optional.of(trip())
 
     every {
         itineraryDayRepository.findById(itineraryDayId)
@@ -597,11 +596,10 @@ fun `update activity successfully`() {
 fun `update activity rejects missing activity`() {
 
     every {
-        tripRepository.findByIdAndOwnerId(
-            tripId,
-            userId
+        tripRepository.findById(
+            tripId
         )
-    } returns trip()
+    } returns Optional.of(trip())
 
     every {
         itineraryDayRepository.findById(itineraryDayId)
@@ -652,11 +650,10 @@ fun `delete activity successfully`() {
     val existingActivity = activity()
 
     every {
-        tripRepository.findByIdAndOwnerId(
-            tripId,
-            userId
+        tripRepository.findById(
+            tripId
         )
-    } returns trip()
+    } returns Optional.of(trip())
 
     every {
         itineraryDayRepository.findById(itineraryDayId)
@@ -691,11 +688,10 @@ fun `delete activity successfully`() {
 fun `delete activity rejects missing activity`() {
 
     every {
-        tripRepository.findByIdAndOwnerId(
-            tripId,
-            userId
+        tripRepository.findById(
+            tripId
         )
-    } returns trip()
+    } returns Optional.of(trip())
 
     every {
         itineraryDayRepository.findById(itineraryDayId)
@@ -732,11 +728,10 @@ fun `mark activity completed successfully`() {
     val existingActivity = activity()
 
     every {
-        tripRepository.findByIdAndOwnerId(
-            tripId,
-            userId
+        tripRepository.findById(
+            tripId
         )
-    } returns trip()
+    } returns Optional.of(trip())
 
     every {
         itineraryDayRepository.findById(itineraryDayId)
@@ -778,11 +773,10 @@ fun `mark activity incomplete successfully`() {
     }
 
     every {
-        tripRepository.findByIdAndOwnerId(
-            tripId,
-            userId
+        tripRepository.findById(
+            tripId
         )
-    } returns trip()
+    } returns Optional.of(trip())
 
     every {
         itineraryDayRepository.findById(itineraryDayId)
@@ -820,11 +814,10 @@ fun `mark activity incomplete successfully`() {
     fun `create activity rejects missing itinerary day`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
+            tripRepository.findById(
+                tripId
             )
-        } returns trip()
+        } returns Optional.of(trip())
 
         every {
             itineraryDayRepository.findById(itineraryDayId)
@@ -862,11 +855,10 @@ fun `mark activity incomplete successfully`() {
         val existingActivity = activity()
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
+            tripRepository.findById(
+                tripId
             )
-        } returns trip()
+        } returns Optional.of(trip())
 
         every {
             itineraryDayRepository.findById(itineraryDayId)
@@ -913,11 +905,10 @@ fun `mark activity incomplete successfully`() {
         val existingActivity = activity()
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
+            tripRepository.findById(
+                tripId
             )
-        } returns trip()
+        } returns Optional.of(trip())
 
         every {
             itineraryDayRepository.findById(itineraryDayId)
@@ -964,11 +955,10 @@ fun `mark activity incomplete successfully`() {
         val existingActivity = activity()
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
+            tripRepository.findById(
+                tripId
             )
-        } returns trip()
+        } returns Optional.of(trip())
 
         every {
             itineraryDayRepository.findById(itineraryDayId)
@@ -1009,5 +999,144 @@ fun `mark activity incomplete successfully`() {
         }
     }
 
+    @Test
+    fun `accepted member can get activities`() {
 
+        val memberUserId = UUID.randomUUID()
+
+        val sharedTrip = trip().apply {
+            ownerId = UUID.randomUUID()
+        }
+
+        every {
+            tripRepository.findById(tripId)
+        } returns Optional.of(sharedTrip)
+
+        every {
+            tripMemberRepository.findByTripIdAndUserId(
+                tripId,
+                memberUserId
+            )
+        } returns TripMember(
+            tripId = tripId,
+            userId = memberUserId,
+            role = TripMemberRole.MEMBER,
+            status = TripMemberStatus.ACCEPTED
+        )
+
+        every {
+            itineraryDayRepository.findById(itineraryDayId)
+        } returns Optional.of(itineraryDay())
+
+        every {
+            activityRepository.findAllByItineraryDayIdOrderBySortOrderAsc(
+                itineraryDayId
+            )
+        } returns listOf(activity())
+
+        val result = service.getActivities(
+            memberUserId,
+            tripId,
+            itineraryDayId
+        )
+
+        assertEquals(1, result.size)
+        assertEquals(activityId, result[0].id)
+        assertEquals("Burj Khalifa", result[0].title)
+    }
+
+    @Test
+    fun `get activity rejects activity belonging to another day`() {
+
+        val anotherDayId = UUID.randomUUID()
+
+        val existingActivity = activity().apply {
+            itineraryDayId = anotherDayId
+        }
+
+        every {
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
+
+        every {
+            itineraryDayRepository.findById(itineraryDayId)
+        } returns Optional.of(itineraryDay())
+
+        every {
+            activityRepository.findByIdAndItineraryDayId(
+                activityId,
+                itineraryDayId
+            )
+        } returns null
+
+        assertThrows<IllegalArgumentException> {
+            service.getActivity(
+                userId,
+                tripId,
+                itineraryDayId,
+                activityId
+            )
+        }
+
+        verify(exactly = 0) {
+            activityRepository.save(any())
+        }
+    }
+
+    @Test
+    fun `accepted member cannot access activity belonging to another day`() {
+
+        val memberUserId = UUID.randomUUID()
+        val anotherDayId = UUID.randomUUID()
+
+        val sharedTrip = trip().apply {
+            ownerId = UUID.randomUUID()
+        }
+
+        every {
+            tripRepository.findById(tripId)
+        } returns Optional.of(sharedTrip)
+
+        every {
+            tripMemberRepository.findByTripIdAndUserId(
+                tripId,
+                memberUserId
+            )
+        } returns TripMember(
+            tripId = tripId,
+            userId = memberUserId,
+            role = TripMemberRole.MEMBER,
+            status = TripMemberStatus.ACCEPTED
+        )
+
+        // The requested day belongs to this trip.
+        every {
+            itineraryDayRepository.findById(itineraryDayId)
+        } returns Optional.of(itineraryDay())
+
+        // Activity does NOT belong to the requested day.
+        every {
+            activityRepository.findByIdAndItineraryDayId(
+                activityId,
+                itineraryDayId
+            )
+        } returns null
+
+        assertThrows<IllegalArgumentException> {
+            service.getActivity(
+                memberUserId,
+                tripId,
+                itineraryDayId,
+                activityId
+            )
+        }
+
+        verify(exactly = 0) {
+            activityRepository.save(any())
+        }
+
+        verify(exactly = 0) {
+            activityRepository.delete(any())
+        }
+    }
 }

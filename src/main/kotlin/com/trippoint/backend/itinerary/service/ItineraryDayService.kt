@@ -6,6 +6,7 @@ import com.trippoint.backend.itinerary.graphql.input.CreateItineraryDayInput
 import com.trippoint.backend.itinerary.graphql.input.UpdateItineraryDayInput
 import com.trippoint.backend.itinerary.repository.ItineraryDayRepository
 import com.trippoint.backend.trip.repository.TripRepository
+import com.trippoint.backend.trip.service.TripAccessService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -15,7 +16,8 @@ import java.util.UUID
 @Service
 class ItineraryDayService(
     private val itineraryDayRepository: ItineraryDayRepository,
-    private val tripRepository: TripRepository
+    private val tripRepository: TripRepository,
+    private val tripAccessService: TripAccessService
 ) {
 
     @Transactional
@@ -25,10 +27,15 @@ class ItineraryDayService(
         input: CreateItineraryDayInput
     ): ItineraryDayResponse {
 
-        val trip = tripRepository.findByIdAndOwnerId(
-            tripId,
-            userId
-        ) ?: throw IllegalArgumentException("Trip not found")
+        tripAccessService.requireMemberAccess(
+            tripId = tripId,
+            userId = userId
+        )
+
+        val trip = tripRepository.findById(tripId)
+            .orElseThrow {
+                IllegalArgumentException("Trip not found")
+            }
 
         require(input.dayNumber > 0) {
             "Day number must be greater than zero"
@@ -88,10 +95,10 @@ class ItineraryDayService(
         tripId: UUID
     ): List<ItineraryDayResponse> {
 
-        tripRepository.findByIdAndOwnerId(
-            tripId,
-            userId
-        ) ?: throw IllegalArgumentException("Trip not found")
+        tripAccessService.requireMemberAccess(
+            tripId = tripId,
+            userId = userId
+        )
 
         return itineraryDayRepository
             .findAllByTripIdOrderByDayNumberAsc(tripId)
@@ -105,10 +112,10 @@ class ItineraryDayService(
         dayNumber: Int
     ): ItineraryDayResponse {
 
-        tripRepository.findByIdAndOwnerId(
-            tripId,
-            userId
-        ) ?: throw IllegalArgumentException("Trip not found")
+        tripAccessService.requireMemberAccess(
+            tripId = tripId,
+            userId = userId
+        )
 
         val day = itineraryDayRepository.findByTripIdAndDayNumber(
             tripId,
@@ -126,10 +133,15 @@ class ItineraryDayService(
         input: UpdateItineraryDayInput
     ): ItineraryDayResponse {
 
-        val trip = tripRepository.findByIdAndOwnerId(
-            tripId,
-            userId
-        ) ?: throw IllegalArgumentException("Trip not found")
+        tripAccessService.requireMemberAccess(
+            tripId = tripId,
+            userId = userId
+        )
+
+        val trip = tripRepository.findById(tripId)
+            .orElseThrow {
+                IllegalArgumentException("Trip not found")
+            }
 
         val day = itineraryDayRepository
             .findByTripIdAndDayNumber(
@@ -205,10 +217,10 @@ class ItineraryDayService(
         dayNumber: Int
     ): Boolean {
 
-        tripRepository.findByIdAndOwnerId(
-            tripId,
-            userId
-        ) ?: throw IllegalArgumentException("Trip not found")
+        tripAccessService.requireMemberAccess(
+            tripId = tripId,
+            userId = userId
+        )
 
         val day = itineraryDayRepository
             .findByTripIdAndDayNumber(

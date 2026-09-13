@@ -23,7 +23,8 @@ import java.util.UUID
 class TripService(
     private val tripRepository: TripRepository,
     private val tripMemberRepository: TripMemberRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val tripAccessService: TripAccessService
 ) {
 
     @Transactional
@@ -80,10 +81,15 @@ class TripService(
         tripId: UUID
     ): TripResponse {
 
-        val trip = tripRepository.findByIdAndOwnerId(
-            tripId,
-            userId
-        ) ?: throw IllegalArgumentException("Trip not found")
+        tripAccessService.requireMemberAccess(
+            tripId = tripId,
+            userId = userId
+        )
+
+        val trip = tripRepository.findById(tripId)
+            .orElseThrow {
+                IllegalArgumentException("Trip not found")
+            }
 
         return TripResponse.from(trip)
     }
@@ -96,15 +102,17 @@ class TripService(
 
         val trips = when {
             filter?.status != null ->
-                tripRepository
-                    .findAllByOwnerIdAndStatusOrderByStartDateAsc(
-                        userId,
-                        filter.status
-                    )
+                tripRepository.findAllAccessibleTripsByStatus(
+                    userId = userId,
+                    memberStatus = TripMemberStatus.ACCEPTED,
+                    tripStatus = filter.status
+                )
 
             else ->
-                tripRepository
-                    .findAllByOwnerIdOrderByStartDateAsc(userId)
+                tripRepository.findAllAccessibleTrips(
+                    userId = userId,
+                    status = TripMemberStatus.ACCEPTED
+                )
         }
 
         val search = filter?.search
@@ -172,12 +180,14 @@ class TripService(
         tripId: UUID
     ): List<TripMemberResponse> {
 
-        tripRepository.findByIdAndOwnerId(tripId, userId)
-            ?: throw IllegalArgumentException("Trip not found")
+        tripAccessService.requireMemberAccess(
+            tripId = tripId,
+            userId = userId
+        )
 
         return tripMemberRepository
             .findAllByTripId(tripId)
-            .map(TripMemberResponse::from)
+            .map { TripMemberResponse.from(it) }
     }
 
     @Transactional
@@ -245,10 +255,15 @@ class TripService(
         input: UpdateTripInput
     ): TripResponse {
 
-        val trip = tripRepository.findByIdAndOwnerId(
-            tripId,
-            userId
-        ) ?: throw IllegalArgumentException("Trip not found")
+        tripAccessService.requireOwnerAccess(
+            tripId = tripId,
+            userId = userId
+        )
+
+        val trip = tripRepository.findById(tripId)
+            .orElseThrow {
+                IllegalArgumentException("Trip not found")
+            }
 
         input.name?.let {
             val name = it.trim()
@@ -297,10 +312,15 @@ class TripService(
         tripId: UUID
     ): Boolean {
 
-        val trip = tripRepository.findByIdAndOwnerId(
-            tripId,
-            userId
-        ) ?: throw IllegalArgumentException("Trip not found")
+        tripAccessService.requireOwnerAccess(
+            tripId = tripId,
+            userId = userId
+        )
+
+        val trip = tripRepository.findById(tripId)
+            .orElseThrow {
+                IllegalArgumentException("Trip not found")
+            }
 
         require(trip.status != TripStatus.ARCHIVED) {
             "Trip is already archived"
@@ -319,10 +339,15 @@ class TripService(
         tripId: UUID
     ): TripResponse {
 
-        val trip = tripRepository.findByIdAndOwnerId(
-            tripId,
-            userId
-        ) ?: throw IllegalArgumentException("Trip not found")
+        tripAccessService.requireOwnerAccess(
+            tripId = tripId,
+            userId = userId
+        )
+
+        val trip = tripRepository.findById(tripId)
+            .orElseThrow {
+                IllegalArgumentException("Trip not found")
+            }
 
         require(trip.status == TripStatus.ARCHIVED) {
             "Only archived trips can be restored"
@@ -341,14 +366,82 @@ class TripService(
         tripId: UUID
     ): Boolean {
 
-        val trip = tripRepository.findByIdAndOwnerId(
-            tripId,
-            userId
-        ) ?: throw IllegalArgumentException("Trip not found")
+        tripAccessService.requireOwnerAccess(
+            tripId = tripId,
+            userId = userId
+        )
+
+        val trip = tripRepository.findById(tripId)
+            .orElseThrow {
+                IllegalArgumentException("Trip not found")
+            }
 
         tripMemberRepository.deleteAllByTripId(tripId)
 
         tripRepository.delete(trip)
+
+        return true
+    }
+
+    @Transactional
+    fun removeTripMember(
+        tripId: UUID,
+        memberUserId: UUID,
+        currentUserId: UUID
+    ): Boolean {
+
+        tripAccessService.requireOwnerAccess(
+            tripId,
+            currentUserId
+        )
+
+        val member = tripMemberRepository
+            .findByTripIdAndUserId(
+                tripId,
+                memberUserId
+            )
+            ?: throw IllegalArgumentException(
+                "Trip member not found"
+            )
+
+        if (member.role == TripMemberRole.OWNER) {
+            throw IllegalArgumentException(
+                "Trip owner cannot be removed"
+            )
+        }
+
+        tripMemberRepository.delete(member)
+
+        return true
+    }
+
+    @Transactional
+    fun leaveTrip(
+        tripId: UUID,
+        currentUserId: UUID
+    ): Boolean {
+
+        tripAccessService.requireMemberAccess(
+            tripId,
+            currentUserId
+        )
+
+        val member = tripMemberRepository
+            .findByTripIdAndUserId(
+                tripId,
+                currentUserId
+            )
+            ?: throw IllegalArgumentException(
+                "Trip member not found"
+            )
+
+        if (member.role == TripMemberRole.OWNER) {
+            throw IllegalArgumentException(
+                "Trip owner cannot leave the trip"
+            )
+        }
+
+        tripMemberRepository.delete(member)
 
         return true
     }
