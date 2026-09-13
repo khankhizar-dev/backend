@@ -304,7 +304,11 @@ class ChecklistTemplateGraphQLController(
                 sectionId = section.id
             )
 
-            val progress = checklistService.getSectionProgress(section.id)
+            val progress = checklistService.getSectionProgress(
+                userId = userId,
+                tripId = tripUuid,
+                sectionId = section.id,
+                checklistId = checklist.id)
 
             section.toResponse(
                 items = items,
@@ -313,7 +317,9 @@ class ChecklistTemplateGraphQLController(
         }
 
         val progress = checklistService.getChecklistProgress(
-            checklist.id
+            userId = userId,
+            tripId = tripUuid,
+            checklistId = checklist.id,
         )
 
         return checklist.toResponse(

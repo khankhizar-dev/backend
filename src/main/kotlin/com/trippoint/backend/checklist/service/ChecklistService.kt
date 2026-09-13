@@ -454,8 +454,20 @@ class ChecklistService(
 
     @Transactional(readOnly = true)
     fun getChecklistProgress(
+        userId: UUID,
+        tripId: UUID,
         checklistId: UUID
     ): ChecklistProgress {
+
+        tripAccessService.requireMemberAccess(
+            tripId = tripId,
+            userId = userId
+        )
+
+        getActiveChecklist(
+            tripId = tripId,
+            checklistId = checklistId
+        )
 
         val sections = checklistSectionRepository
             .findAllByChecklistIdOrderByPositionAsc(checklistId)
@@ -497,8 +509,26 @@ class ChecklistService(
 
     @Transactional(readOnly = true)
     fun getSectionProgress(
+        userId: UUID,
+        tripId: UUID,
+        checklistId: UUID,
         sectionId: UUID
     ): ChecklistProgress {
+
+        tripAccessService.requireMemberAccess(
+            tripId = tripId,
+            userId = userId
+        )
+
+        getActiveChecklist(
+            tripId = tripId,
+            checklistId = checklistId
+        )
+
+        getSection(
+            checklistId = checklistId,
+            sectionId = sectionId
+        )
 
         val totalItems =
             checklistItemRepository.countBySectionId(sectionId)
