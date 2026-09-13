@@ -79,12 +79,10 @@ class BudgetService(
         tripId: UUID
     ): Budget {
 
-        requireTripAccess(
-            userId = userId,
-            tripId = tripId
+        tripAccessService.requireMemberAccess(
+            tripId = tripId,
+            userId = userId
         )
-
-        tripAccessService.requireOwnerAccess(tripId, userId)
 
         return budgetRepository.findByTripId(tripId)
             ?: throw IllegalArgumentException("Budget not found")
@@ -207,54 +205,6 @@ class BudgetService(
                 IllegalArgumentException("Trip not found")
             }
 
-    private fun requireTripAccess(
-        userId: UUID,
-        tripId: UUID
-    ) {
-
-        val trip = getTrip(tripId)
-
-        if (trip.ownerId == userId) {
-            return
-        }
-
-        val member = tripMemberRepository
-            .findByTripIdAndUserId(
-                tripId,
-                userId
-            )
-
-        require(
-            member?.status == TripMemberStatus.ACCEPTED
-        ) {
-            "You do not have access to this trip"
-        }
-    }
-
-    private fun requireAcceptedMember(
-        tripId: UUID,
-        userId: UUID
-    ) {
-
-        val trip = getTrip(tripId)
-
-        if (trip.ownerId == userId) {
-            return
-        }
-
-        val member = tripMemberRepository
-            .findByTripIdAndUserId(
-                tripId,
-                userId
-            )
-
-        require(
-            member?.status == TripMemberStatus.ACCEPTED
-        ) {
-            "User is not an accepted member of this trip"
-        }
-    }
-
     private fun validateBookingBelongsToTrip(
         bookingId: UUID,
         tripId: UUID
@@ -332,7 +282,10 @@ class BudgetService(
         tripId: UUID
     ): Long {
 
-        requireTripAccess(userId, tripId)
+        tripAccessService.requireMemberAccess(
+            tripId = tripId,
+            userId = userId
+        )
 
         return expenseRepository.countActiveExpenses(tripId)
     }

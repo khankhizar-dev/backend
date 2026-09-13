@@ -17,7 +17,12 @@ import com.trippoint.backend.booking.repository.BookingEventRepository
 import com.trippoint.backend.booking.repository.BookingRepository
 import com.trippoint.backend.booking.repository.BookingTravellerRepository
 import com.trippoint.backend.trip.entity.Trip
+import com.trippoint.backend.trip.entity.TripMember
+import com.trippoint.backend.trip.model.TripMemberRole
+import com.trippoint.backend.trip.model.TripMemberStatus
+import com.trippoint.backend.trip.repository.TripMemberRepository
 import com.trippoint.backend.trip.repository.TripRepository
+import com.trippoint.backend.trip.service.TripAccessService
 import io.mockk.*
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -25,6 +30,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.math.BigDecimal
 import java.time.LocalDate
+import java.util.Optional
 import java.util.UUID
 
 class BookingServiceTest {
@@ -33,6 +39,8 @@ class BookingServiceTest {
     private lateinit var bookingTravellerRepository: BookingTravellerRepository
     private lateinit var bookingEventRepository: BookingEventRepository
     private lateinit var tripRepository: TripRepository
+    private lateinit var tripMemberRepository: TripMemberRepository
+    private lateinit var tripAccessService: TripAccessService
 
     private lateinit var service: BookingService
     private lateinit var objectMapper: ObjectMapper
@@ -50,6 +58,12 @@ class BookingServiceTest {
         bookingTravellerRepository = mockk()
         bookingEventRepository = mockk()
         tripRepository = mockk()
+        tripMemberRepository = mockk()
+
+        tripAccessService = TripAccessService(
+            tripRepository,
+            tripMemberRepository
+        )
 
         objectMapper = jacksonObjectMapper()
 
@@ -57,7 +71,7 @@ class BookingServiceTest {
             bookingRepository,
             bookingTravellerRepository,
             bookingEventRepository,
-            tripRepository,
+            tripAccessService,
             objectMapper
         )
     }
@@ -66,8 +80,8 @@ class BookingServiceTest {
     fun `create booking successfully`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(tripId, userId)
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.existsByTripIdAndBookingReference(
@@ -126,11 +140,10 @@ class BookingServiceTest {
     fun `create booking rejects non owner`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                otherUserId
+            tripRepository.findById(
+                tripId
             )
-        } returns null
+        } returns Optional.empty()
 
         val input = CreateBookingInput(
             itineraryDayId = null,
@@ -164,8 +177,8 @@ class BookingServiceTest {
     fun `create booking rejects blank title`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(tripId, userId)
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         val input = CreateBookingInput(
             itineraryDayId = null,
@@ -199,8 +212,8 @@ class BookingServiceTest {
     fun `create booking rejects duplicate booking reference`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(tripId, userId)
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.existsByTripIdAndBookingReference(
@@ -241,8 +254,8 @@ class BookingServiceTest {
     fun `create booking rejects end time before start time`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(tripId, userId)
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         val input = CreateBookingInput(
             itineraryDayId = null,
@@ -276,8 +289,8 @@ class BookingServiceTest {
     fun `create booking rejects negative amount`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(tripId, userId)
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         val input = CreateBookingInput(
             itineraryDayId = null,
@@ -311,8 +324,8 @@ class BookingServiceTest {
     fun `get bookings returns trip bookings`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(tripId, userId)
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findAllByTripIdOrderByStartAtAsc(tripId)
@@ -340,8 +353,8 @@ class BookingServiceTest {
     fun `get booking rejects missing booking`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(tripId, userId)
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findByIdAndTripId(
@@ -365,11 +378,8 @@ class BookingServiceTest {
         val existingBooking = booking()
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
-            )
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findByIdAndTripId(
@@ -426,11 +436,8 @@ class BookingServiceTest {
     fun `update booking rejects non owner`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                otherUserId
-            )
-        } returns null
+            tripRepository.findById(tripId)
+        } returns Optional.empty()
 
         val input = UpdateBookingInput(
             title = "Hacked Booking"
@@ -454,11 +461,8 @@ class BookingServiceTest {
     fun `update booking rejects missing booking`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
-            )
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findByIdAndTripId(
@@ -491,11 +495,8 @@ class BookingServiceTest {
         val existingBooking = booking()
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
-            )
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findByIdAndTripId(
@@ -531,11 +532,8 @@ class BookingServiceTest {
         }
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
-            )
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findByIdAndTripId(
@@ -575,11 +573,8 @@ class BookingServiceTest {
         val existingBooking = booking()
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
-            )
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findByIdAndTripId(
@@ -626,11 +621,8 @@ class BookingServiceTest {
     fun `delete booking rejects missing booking`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
-            )
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findByIdAndTripId(
@@ -656,11 +648,8 @@ class BookingServiceTest {
     fun `get booking events returns events`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
-            )
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findByIdAndTripId(
@@ -696,11 +685,8 @@ class BookingServiceTest {
     fun `get booking travellers returns travellers`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
-            )
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findByIdAndTripId(
@@ -734,8 +720,8 @@ class BookingServiceTest {
     fun `add booking traveller successfully`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(tripId, userId)
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findByIdAndTripId(bookingId, tripId)
@@ -776,8 +762,8 @@ class BookingServiceTest {
     fun `add booking traveller rejects blank first name`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(tripId, userId)
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findByIdAndTripId(bookingId, tripId)
@@ -813,8 +799,8 @@ class BookingServiceTest {
         )
 
         every {
-            tripRepository.findByIdAndOwnerId(tripId, userId)
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findByIdAndTripId(bookingId, tripId)
@@ -855,8 +841,8 @@ class BookingServiceTest {
     fun `update booking traveller rejects missing traveller`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(tripId, userId)
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findByIdAndTripId(bookingId, tripId)
@@ -896,8 +882,8 @@ class BookingServiceTest {
         )
 
         every {
-            tripRepository.findByIdAndOwnerId(tripId, userId)
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findByIdAndTripId(bookingId, tripId)
@@ -932,8 +918,8 @@ class BookingServiceTest {
     fun `delete booking traveller rejects missing traveller`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(tripId, userId)
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findByIdAndTripId(bookingId, tripId)
@@ -960,10 +946,13 @@ class BookingServiceTest {
         }
     }
 
-    private fun trip(): Trip =
+    private fun trip(
+        id: UUID = tripId,
+        ownerId: UUID = userId
+    ): Trip =
         Trip(
-            id = tripId,
-            ownerId = userId,
+            id = id,
+            ownerId = ownerId,
             name = "Dubai Trip",
             destination = "Dubai",
             startDate = LocalDate.of(2026, 10, 15),
@@ -985,8 +974,8 @@ class BookingServiceTest {
     fun `get bookings filters by type`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(tripId, userId)
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findAllByTripIdOrderByStartAtAsc(tripId)
@@ -1019,8 +1008,8 @@ class BookingServiceTest {
     fun `get bookings filters by status`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(tripId, userId)
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findAllByTripIdOrderByStartAtAsc(tripId)
@@ -1049,8 +1038,8 @@ class BookingServiceTest {
     fun `get bookings searches title provider and reference`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(tripId, userId)
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findAllByTripIdOrderByStartAtAsc(tripId)
@@ -1085,8 +1074,8 @@ class BookingServiceTest {
         }
 
         every {
-            tripRepository.findByIdAndOwnerId(tripId, userId)
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findByIdAndTripId(
@@ -1126,8 +1115,8 @@ class BookingServiceTest {
         }
 
         every {
-            tripRepository.findByIdAndOwnerId(tripId, userId)
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findByIdAndTripId(
@@ -1167,8 +1156,8 @@ class BookingServiceTest {
         }
 
         every {
-            tripRepository.findByIdAndOwnerId(tripId, userId)
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findByIdAndTripId(
@@ -1202,8 +1191,8 @@ class BookingServiceTest {
         }
 
         every {
-            tripRepository.findByIdAndOwnerId(tripId, userId)
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findByIdAndTripId(
@@ -1232,8 +1221,8 @@ class BookingServiceTest {
         }
 
         every {
-            tripRepository.findByIdAndOwnerId(tripId, userId)
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findByIdAndTripId(bookingId, tripId)
@@ -1274,8 +1263,8 @@ class BookingServiceTest {
         }
 
         every {
-            tripRepository.findByIdAndOwnerId(tripId, userId)
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findByIdAndTripId(bookingId, tripId)
@@ -1308,8 +1297,8 @@ class BookingServiceTest {
         }
 
         every {
-            tripRepository.findByIdAndOwnerId(tripId, userId)
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findByIdAndTripId(bookingId, tripId)
@@ -1342,8 +1331,8 @@ class BookingServiceTest {
         }
 
         every {
-            tripRepository.findByIdAndOwnerId(tripId, userId)
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findByIdAndTripId(bookingId, tripId)
@@ -1376,8 +1365,8 @@ class BookingServiceTest {
         }
 
         every {
-            tripRepository.findByIdAndOwnerId(tripId, userId)
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findByIdAndTripId(bookingId, tripId)
@@ -1406,8 +1395,8 @@ class BookingServiceTest {
         }
 
         every {
-            tripRepository.findByIdAndOwnerId(tripId, userId)
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findByIdAndTripId(bookingId, tripId)
@@ -1454,8 +1443,8 @@ class BookingServiceTest {
         }
 
         every {
-            tripRepository.findByIdAndOwnerId(tripId, userId)
-        } returns trip()
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip())
 
         every {
             bookingRepository.findByIdAndTripId(bookingId, tripId)
@@ -1499,11 +1488,8 @@ class BookingServiceTest {
     fun `get booking rejects trip owned by another user`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
-            )
-        } returns null
+            tripRepository.findById(tripId)
+        } returns Optional.empty()
 
         assertThrows<IllegalArgumentException> {
             service.getBooking(
@@ -1525,11 +1511,8 @@ class BookingServiceTest {
     fun `update booking rejects trip owned by another user`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
-            )
-        } returns null
+            tripRepository.findById(tripId)
+        } returns Optional.empty()
 
         assertThrows<IllegalArgumentException> {
             service.updateBooking(
@@ -1558,11 +1541,8 @@ class BookingServiceTest {
     fun `delete booking rejects trip owned by another user`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
-            )
-        } returns null
+            tripRepository.findById(tripId)
+        } returns Optional.empty()
 
         assertThrows<IllegalArgumentException> {
             service.deleteBooking(
@@ -1588,11 +1568,8 @@ class BookingServiceTest {
     fun `add booking traveller rejects unauthorized trip`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
-            )
-        } returns null
+            tripRepository.findById(tripId)
+        } returns Optional.empty()
 
         val input = CreateBookingTravellerInput(
             firstName = "John"
@@ -1610,5 +1587,227 @@ class BookingServiceTest {
         verify(exactly = 0) {
             bookingTravellerRepository.save(any())
         }
+    }
+
+    @Test
+    fun `accepted member can create booking`() {
+
+        every {
+            tripRepository.findById(tripId)
+        } returns Optional.of(
+            trip().apply {
+                ownerId = otherUserId
+            }
+        )
+
+        every {
+            tripMemberRepository.findByTripIdAndUserId(
+                tripId,
+                userId
+            )
+        } returns TripMember(
+            id = UUID.randomUUID(),
+            tripId = tripId,
+            userId = userId,
+            role = TripMemberRole.MEMBER,
+            status = TripMemberStatus.ACCEPTED
+        )
+
+        every {
+            bookingRepository.existsByTripIdAndBookingReference(
+                tripId,
+                "AI294"
+            )
+        } returns false
+
+        every {
+            bookingRepository.save(any())
+        } answers { firstArg() }
+
+        every {
+            bookingEventRepository.save(any())
+        } answers { firstArg() }
+
+        val input = CreateBookingInput(
+            itineraryDayId = null,
+            type = BookingType.FLIGHT,
+            title = "Flight to Dubai",
+            provider = "Air India",
+            bookingReference = "AI294",
+            startAt = "2026-10-15T10:00:00",
+            endAt = "2026-10-15T13:00:00",
+            location = "Delhi Airport",
+            amount = BigDecimal("12500.00"),
+            currency = "INR",
+            notes = null,
+            details = null
+        )
+
+        val result = service.createBooking(
+            userId,
+            tripId,
+            input
+        )
+
+        assertEquals(tripId, result.tripId)
+        assertEquals("Flight to Dubai", result.title)
+
+        verify(exactly = 1) {
+            bookingRepository.save(any())
+        }
+    }
+
+    @Test
+    fun `accepted member can get bookings`() {
+
+        mockAcceptedMemberAccess()
+
+        every {
+            bookingRepository.findAllByTripIdOrderByStartAtAsc(tripId)
+        } returns listOf(
+            booking(title = "Shared Flight")
+        )
+
+        val result = service.getBookings(
+            userId,
+            tripId,
+            null
+        )
+
+        assertEquals(1, result.size)
+        assertEquals("Shared Flight", result[0].title)
+    }
+
+    @Test
+    fun `accepted member cannot access booking from another trip`() {
+
+        val anotherTripId = UUID.randomUUID()
+
+        every {
+            tripRepository.findById(anotherTripId)
+        } returns Optional.of(
+            trip(
+                id = anotherTripId,
+                ownerId = otherUserId
+            )
+        )
+
+        every {
+            tripMemberRepository.findByTripIdAndUserId(
+                anotherTripId,
+                userId
+            )
+        } returns null
+
+        assertThrows<IllegalAccessException> {
+            service.getBooking(
+                userId,
+                anotherTripId,
+                bookingId
+            )
+        }
+
+        verify(exactly = 0) {
+            bookingRepository.findByIdAndTripId(
+                any(),
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun `accepted member can get booking travellers`() {
+
+        mockAcceptedMemberAccess()
+
+        every {
+            bookingRepository.findByIdAndTripId(
+                bookingId,
+                tripId
+            )
+        } returns booking()
+
+        val traveller = BookingTraveller(
+            id = travellerId,
+            bookingId = bookingId,
+            firstName = "John",
+            lastName = "Khan"
+        )
+
+        every {
+            bookingTravellerRepository.findAllByBookingId(bookingId)
+        } returns listOf(traveller)
+
+        val result = service.getBookingTravellers(
+            userId,
+            tripId,
+            bookingId
+        )
+
+        assertEquals(1, result.size)
+        assertEquals("John", result[0].firstName)
+    }
+
+    @Test
+    fun `accepted member can get booking events`() {
+
+        mockAcceptedMemberAccess()
+
+        every {
+            bookingRepository.findByIdAndTripId(
+                bookingId,
+                tripId
+            )
+        } returns booking()
+
+        val event = BookingEvent(
+            id = UUID.randomUUID(),
+            bookingId = bookingId,
+            eventType = "BOOKING_CREATED",
+            description = "Booking created",
+            createdBy = userId
+        )
+
+        every {
+            bookingEventRepository.findAllByBookingIdOrderByCreatedAtAsc(
+                bookingId
+            )
+        } returns listOf(event)
+
+        val result = service.getBookingEvents(
+            userId,
+            tripId,
+            bookingId
+        )
+
+        assertEquals(1, result.size)
+        assertEquals("BOOKING_CREATED", result[0].eventType)
+    }
+
+    private fun mockAcceptedMemberAccess(
+        tripId: UUID = this.tripId,
+        memberId: UUID = userId
+    ) {
+        every {
+            tripRepository.findById(tripId)
+        } returns Optional.of(
+            trip(
+                id = tripId,
+                ownerId = otherUserId
+            )
+        )
+
+        every {
+            tripMemberRepository.findByTripIdAndUserId(
+                tripId,
+                memberId
+            )
+        } returns TripMember(
+            id = UUID.randomUUID(),
+            tripId = tripId,
+            userId = memberId,
+            role = TripMemberRole.MEMBER,
+            status = TripMemberStatus.ACCEPTED
+        )
     }
 }

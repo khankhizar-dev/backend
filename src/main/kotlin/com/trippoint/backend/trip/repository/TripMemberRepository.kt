@@ -34,4 +34,9 @@ interface TripMemberRepository : JpaRepository<TripMember, UUID> {
     fun deleteAllByTripId(
         tripId: UUID
     )
+
+    fun deleteByTripIdAndUserId(
+        tripId: UUID,
+        userId: UUID
+    )
 }

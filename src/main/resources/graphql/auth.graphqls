@@ -553,6 +553,15 @@ extend type Mutation {
         bookingId: ID!
         travellerId: ID!
     ): Boolean!
+
+    removeTripMember(
+            tripId: ID!
+            userId: ID!
+        ): Boolean!
+
+    leaveTrip(
+            tripId: ID!
+        ): Boolean!
 }
 
 input BookingFilterInput {

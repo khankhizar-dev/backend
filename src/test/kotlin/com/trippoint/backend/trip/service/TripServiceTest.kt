@@ -12,11 +12,13 @@ import com.trippoint.backend.trip.model.TripMemberStatus
 import com.trippoint.backend.trip.model.TripStatus
 import com.trippoint.backend.trip.repository.TripMemberRepository
 import com.trippoint.backend.trip.repository.TripRepository
+import graphql.Assert.assertTrue
 import io.mockk.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.time.LocalDate
+import java.util.Optional
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -27,10 +29,12 @@ class TripServiceTest {
     private lateinit var tripMemberRepository: TripMemberRepository
     private lateinit var userRepository: UserRepository
     private lateinit var tripService: TripService
+    private lateinit var tripAccessService: TripAccessService
 
     private val userId = UUID.randomUUID()
     private val otherUserId = UUID.randomUUID()
     private val tripId = UUID.randomUUID()
+    private val memberUserId = UUID.randomUUID()
 
     @BeforeEach
     fun setUp() {
@@ -38,10 +42,16 @@ class TripServiceTest {
         tripMemberRepository = mockk()
         userRepository = mockk()
 
+        tripAccessService = TripAccessService(
+            tripRepository,
+            tripMemberRepository
+        )
+
         tripService = TripService(
             tripRepository = tripRepository,
             tripMemberRepository = tripMemberRepository,
-            userRepository = userRepository
+            userRepository = userRepository,
+            tripAccessService = tripAccessService,
         )
     }
 
@@ -229,8 +239,8 @@ class TripServiceTest {
         )
 
         every {
-            tripRepository.findByIdAndOwnerId(tripId, userId)
-        } returns trip
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip)
 
         val result = tripService.getTrip(
             userId = userId,
@@ -240,19 +250,36 @@ class TripServiceTest {
         assertEquals(tripId.toString(), result.id)
         assertEquals("Bali Trip", result.name)
 
-        verify {
-            tripRepository.findByIdAndOwnerId(tripId, userId)
+        verify(exactly = 2) {
+            tripRepository.findById(tripId)
         }
     }
 
     @Test
-    fun `getTrip rejects non owner`() {
+    fun `getTrip rejects non member`() {
+
+        val trip = Trip(
+            id = tripId,
+            ownerId = userId,
+            name = "Bali Trip",
+            destination = "Bali",
+            startDate = LocalDate.of(2026, 9, 10),
+            endDate = LocalDate.of(2026, 9, 18),
+            status = TripStatus.DRAFT
+        )
 
         every {
-            tripRepository.findByIdAndOwnerId(tripId, otherUserId)
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip)
+
+        every {
+            tripMemberRepository.findByTripIdAndUserId(
+                tripId,
+                otherUserId
+            )
         } returns null
 
-        assertThrows<IllegalArgumentException> {
+        assertThrows<IllegalAccessException> {
             tripService.getTrip(
                 userId = otherUserId,
                 tripId = tripId
@@ -284,7 +311,10 @@ class TripServiceTest {
         )
 
         every {
-            tripRepository.findAllByOwnerIdOrderByStartDateAsc(userId)
+            tripRepository.findAllAccessibleTrips(
+                userId = userId,
+                status = TripMemberStatus.ACCEPTED
+            )
         } returns listOf(trip1, trip2)
 
         val result = tripService.getTrips(
@@ -321,7 +351,10 @@ class TripServiceTest {
         )
 
         every {
-            tripRepository.findAllByOwnerIdOrderByStartDateAsc(userId)
+            tripRepository.findAllAccessibleTrips(
+                userId = userId,
+                status = TripMemberStatus.ACCEPTED
+            )
         } returns listOf(bali, dubai)
 
         val filter = TripFilterInput(
@@ -604,11 +637,10 @@ class TripServiceTest {
         )
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
+            tripRepository.findById(
+                tripId
             )
-        } returns trip
+        } returns Optional.of(trip)
 
         every {
             tripRepository.save(trip)
@@ -639,11 +671,8 @@ class TripServiceTest {
     fun `updateTrip rejects non owner`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                otherUserId
-            )
-        } returns null
+            tripRepository.findById(tripId)
+        } returns Optional.empty()
 
         val input = UpdateTripInput(
             name = "Hacked Trip"
@@ -676,11 +705,8 @@ class TripServiceTest {
         )
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
-            )
-        } returns trip
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip)
 
         val input = UpdateTripInput(
             startDate = "2026-09-20",
@@ -714,11 +740,8 @@ class TripServiceTest {
         )
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
-            )
-        } returns trip
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip)
 
         every {
             tripRepository.save(trip)
@@ -732,11 +755,8 @@ class TripServiceTest {
         assertEquals(true, result)
         assertEquals(TripStatus.ARCHIVED, trip.status)
 
-        verify(exactly = 1) {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
-            )
+        verify(exactly = 2) {
+            tripRepository.findById(tripId)
         }
 
         verify(exactly = 1) {
@@ -748,11 +768,10 @@ class TripServiceTest {
     fun `archiveTrip rejects nonexistent trip`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
+            tripRepository.findById(
+                tripId
             )
-        } returns null
+        } returns Optional.empty()
 
         assertThrows<IllegalArgumentException> {
             tripService.archiveTrip(
@@ -770,11 +789,8 @@ class TripServiceTest {
     fun `archiveTrip rejects non owner`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                otherUserId
-            )
-        } returns null
+            tripRepository.findById(tripId)
+        } returns Optional.empty()
 
         assertThrows<IllegalArgumentException> {
             tripService.archiveTrip(
@@ -802,11 +818,8 @@ class TripServiceTest {
         )
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
-            )
-        } returns trip
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip)
 
         assertThrows<IllegalArgumentException> {
             tripService.archiveTrip(
@@ -839,11 +852,8 @@ class TripServiceTest {
         )
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
-            )
-        } returns trip
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip)
 
         every {
             tripRepository.save(trip)
@@ -857,11 +867,8 @@ class TripServiceTest {
         assertEquals(tripId.toString(), result.id)
         assertEquals(TripStatus.DRAFT, trip.status)
 
-        verify(exactly = 1) {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
-            )
+        verify(exactly = 2) {
+            tripRepository.findById(tripId)
         }
 
         verify(exactly = 1) {
@@ -873,11 +880,8 @@ class TripServiceTest {
     fun `restoreTrip rejects nonexistent trip`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
-            )
-        } returns null
+            tripRepository.findById(tripId)
+        } returns Optional.empty()
 
         assertThrows<IllegalArgumentException> {
             tripService.restoreTrip(
@@ -895,11 +899,10 @@ class TripServiceTest {
     fun `restoreTrip rejects non owner`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                otherUserId
+            tripRepository.findById(
+                tripId
             )
-        } returns null
+        } returns Optional.empty()
 
         assertThrows<IllegalArgumentException> {
             tripService.restoreTrip(
@@ -927,11 +930,8 @@ class TripServiceTest {
         )
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
-            )
-        } returns trip
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip)
 
         assertThrows<IllegalArgumentException> {
             tripService.restoreTrip(
@@ -963,12 +963,10 @@ class TripServiceTest {
             status = TripStatus.COMPLETED
         )
 
+        // NEW
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
-            )
-        } returns trip
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip)
 
         assertThrows<IllegalArgumentException> {
             tripService.restoreTrip(
@@ -996,11 +994,8 @@ class TripServiceTest {
         )
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
-            )
-        } returns trip
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip)
 
         every {
             tripMemberRepository.deleteAllByTripId(tripId)
@@ -1017,11 +1012,8 @@ class TripServiceTest {
 
         assertEquals(true, result)
 
-        verify(exactly = 1) {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
-            )
+        verify(exactly = 2) {
+            tripRepository.findById(tripId)
         }
 
         verify(exactly = 1) {
@@ -1037,11 +1029,8 @@ class TripServiceTest {
     fun `deleteTrip rejects nonexistent trip`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
-            )
-        } returns null
+            tripRepository.findById(tripId)
+        } returns Optional.empty()
 
         assertThrows<IllegalArgumentException> {
             tripService.deleteTrip(
@@ -1063,11 +1052,10 @@ class TripServiceTest {
     fun `deleteTrip rejects non owner`() {
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                otherUserId
+            tripRepository.findById(
+                tripId
             )
-        } returns null
+        } returns Optional.empty()
 
         assertThrows<IllegalArgumentException> {
             tripService.deleteTrip(
@@ -1099,11 +1087,10 @@ class TripServiceTest {
         )
 
         every {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
+            tripRepository.findById(
+                tripId
             )
-        } returns trip
+        } returns Optional.of(trip)
 
         every {
             tripMemberRepository.deleteAllByTripId(tripId)
@@ -1119,17 +1106,617 @@ class TripServiceTest {
         )
 
         verifySequence {
-            tripRepository.findByIdAndOwnerId(
-                tripId,
-                userId
+            tripRepository.findById(
+                tripId
             )
 
-            tripMemberRepository.deleteAllByTripId(
+            tripRepository.findById(
                 tripId
             )
 
             tripRepository.delete(
                 trip
+            )
+        }
+    }
+
+    @Test
+    fun `removeTripMember removes accepted member`() {
+
+        val trip = Trip(
+            id = tripId,
+            ownerId = userId,
+            name = "Bali Trip",
+            destination = "Bali",
+            startDate = LocalDate.of(2026, 9, 10),
+            endDate = LocalDate.of(2026, 9, 18),
+            status = TripStatus.DRAFT
+        )
+
+        val member = TripMember(
+            id = UUID.randomUUID(),
+            tripId = tripId,
+            userId = memberUserId,
+            role = TripMemberRole.MEMBER,
+            status = TripMemberStatus.ACCEPTED
+        )
+
+        every {
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip)
+
+        every {
+            tripMemberRepository.findByTripIdAndUserId(
+                tripId,
+                memberUserId
+            )
+        } returns member
+
+        every {
+            tripMemberRepository.delete(member)
+        } just Runs
+
+        val result = tripService.removeTripMember(
+            tripId = tripId,
+            memberUserId = memberUserId,
+            currentUserId = userId
+        )
+
+        assertTrue(result)
+
+        verify(exactly = 1) {
+            tripMemberRepository.delete(member)
+        }
+    }
+
+    @Test
+    fun `removeTripMember removes pending member`() {
+
+        val trip = Trip(
+            id = tripId,
+            ownerId = userId,
+            name = "Bali Trip",
+            destination = "Bali",
+            startDate = LocalDate.of(2026, 9, 10),
+            endDate = LocalDate.of(2026, 9, 18),
+            status = TripStatus.DRAFT
+        )
+
+        val member = TripMember(
+            id = UUID.randomUUID(),
+            tripId = tripId,
+            userId = memberUserId,
+            role = TripMemberRole.MEMBER,
+            status = TripMemberStatus.PENDING
+        )
+
+        every {
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip)
+
+        every {
+            tripMemberRepository.findByTripIdAndUserId(
+                tripId,
+                memberUserId
+            )
+        } returns member
+
+        every {
+            tripMemberRepository.delete(member)
+        } just Runs
+
+        val result = tripService.removeTripMember(
+            tripId,
+            memberUserId,
+            userId
+        )
+
+        assertTrue(result)
+
+        verify(exactly = 1) {
+            tripMemberRepository.delete(member)
+        }
+    }
+
+    @Test
+    fun `removeTripMember rejects owner`() {
+
+        val trip = Trip(
+            id = tripId,
+            ownerId = userId,
+            name = "Bali Trip",
+            destination = "Bali",
+            startDate = LocalDate.of(2026, 9, 10),
+            endDate = LocalDate.of(2026, 9, 18),
+            status = TripStatus.DRAFT
+        )
+
+        val owner = TripMember(
+            id = UUID.randomUUID(),
+            tripId = tripId,
+            userId = userId,
+            role = TripMemberRole.OWNER,
+            status = TripMemberStatus.ACCEPTED
+        )
+
+        every {
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip)
+
+        every {
+            tripMemberRepository.findByTripIdAndUserId(
+                tripId,
+                userId
+            )
+        } returns owner
+
+        assertThrows<IllegalArgumentException> {
+            tripService.removeTripMember(
+                tripId,
+                userId,
+                userId
+            )
+        }
+
+        verify(exactly = 0) {
+            tripMemberRepository.delete(any())
+        }
+    }
+
+    @Test
+    fun `removeTripMember rejects non owner`() {
+
+        val trip = Trip(
+            id = tripId,
+            ownerId = userId,
+            name = "Bali Trip",
+            destination = "Bali",
+            startDate = LocalDate.of(2026, 9, 10),
+            endDate = LocalDate.of(2026, 9, 18),
+            status = TripStatus.DRAFT
+        )
+
+        every {
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip)
+
+        assertThrows<IllegalAccessException> {
+            tripService.removeTripMember(
+                tripId = tripId,
+                memberUserId = userId,
+                currentUserId = otherUserId
+            )
+        }
+
+        verify(exactly = 0) {
+            tripMemberRepository.delete(any())
+        }
+    }
+
+    @Test
+    fun `leaveTrip removes accepted member`() {
+
+        val trip = Trip(
+            id = tripId,
+            ownerId = userId,
+            name = "Bali Trip",
+            destination = "Bali",
+            startDate = LocalDate.of(2026, 9, 10),
+            endDate = LocalDate.of(2026, 9, 18),
+            status = TripStatus.DRAFT
+        )
+
+        val member = TripMember(
+            id = UUID.randomUUID(),
+            tripId = tripId,
+            userId = memberUserId,
+            role = TripMemberRole.MEMBER,
+            status = TripMemberStatus.ACCEPTED
+        )
+
+        every {
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip)
+
+        every {
+            tripMemberRepository.findByTripIdAndUserId(
+                tripId,
+                memberUserId
+            )
+        } returns member
+
+        every {
+            tripMemberRepository.delete(member)
+        } just Runs
+
+        val result = tripService.leaveTrip(
+            tripId = tripId,
+            currentUserId = memberUserId
+        )
+
+        assertTrue(result)
+
+        verify(exactly = 1) {
+            tripMemberRepository.delete(member)
+        }
+    }
+
+    @Test
+    fun `leaveTrip rejects owner`() {
+
+        val trip = Trip(
+            id = tripId,
+            ownerId = userId,
+            name = "Bali Trip",
+            destination = "Bali",
+            startDate = LocalDate.of(2026, 9, 10),
+            endDate = LocalDate.of(2026, 9, 18),
+            status = TripStatus.DRAFT
+        )
+
+        val owner = TripMember(
+            id = UUID.randomUUID(),
+            tripId = tripId,
+            userId = userId,
+            role = TripMemberRole.OWNER,
+            status = TripMemberStatus.ACCEPTED
+        )
+
+        every {
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip)
+
+        every {
+            tripMemberRepository.findByTripIdAndUserId(
+                tripId,
+                userId
+            )
+        } returns owner
+
+        assertThrows<IllegalArgumentException> {
+            tripService.leaveTrip(
+                tripId = tripId,
+                currentUserId = userId
+            )
+        }
+
+        verify(exactly = 0) {
+            tripMemberRepository.delete(any())
+        }
+    }
+
+    @Test
+    fun `leaveTrip rejects pending member`() {
+
+        val trip = Trip(
+            id = tripId,
+            ownerId = userId,
+            name = "Bali Trip",
+            destination = "Bali",
+            startDate = LocalDate.of(2026, 9, 10),
+            endDate = LocalDate.of(2026, 9, 18),
+            status = TripStatus.DRAFT
+        )
+
+        val member = TripMember(
+            id = UUID.randomUUID(),
+            tripId = tripId,
+            userId = memberUserId,
+            role = TripMemberRole.MEMBER,
+            status = TripMemberStatus.PENDING
+        )
+
+        every {
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip)
+
+        every {
+            tripMemberRepository.findByTripIdAndUserId(
+                tripId,
+                memberUserId
+            )
+        } returns member
+
+        assertThrows<IllegalAccessException> {
+            tripService.leaveTrip(
+                tripId = tripId,
+                currentUserId = memberUserId
+            )
+        }
+
+        verify(exactly = 0) {
+            tripMemberRepository.delete(any())
+        }
+    }
+
+    @Test
+    fun `leaveTrip rejects non member`() {
+
+        val trip = Trip(
+            id = tripId,
+            ownerId = userId,
+            name = "Bali Trip",
+            destination = "Bali",
+            startDate = LocalDate.of(2026, 9, 10),
+            endDate = LocalDate.of(2026, 9, 18),
+            status = TripStatus.DRAFT
+        )
+
+        every {
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip)
+
+        every {
+            tripMemberRepository.findByTripIdAndUserId(
+                tripId,
+                otherUserId
+            )
+        } returns null
+
+        assertThrows<IllegalAccessException> {
+            tripService.leaveTrip(
+                tripId = tripId,
+                currentUserId = otherUserId
+            )
+        }
+
+        verify(exactly = 0) {
+            tripMemberRepository.delete(any())
+        }
+    }
+
+    @Test
+    fun `getTripMembers returns members for owner`() {
+
+        val trip = Trip(
+            id = tripId,
+            ownerId = userId,
+            name = "Bali Trip",
+            destination = "Bali",
+            startDate = LocalDate.of(2026, 9, 10),
+            endDate = LocalDate.of(2026, 9, 18),
+            status = TripStatus.DRAFT
+        )
+
+        val owner = TripMember(
+            id = UUID.randomUUID(),
+            tripId = tripId,
+            userId = userId,
+            role = TripMemberRole.OWNER,
+            status = TripMemberStatus.ACCEPTED
+        )
+
+        every {
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip)
+
+        every {
+            tripMemberRepository.findAllByTripId(tripId)
+        } returns listOf(owner)
+
+        val result = tripService.getTripMembers(
+            userId = userId,
+            tripId = tripId
+        )
+
+        assertEquals(1, result.size)
+        assertEquals(
+            TripMemberRole.OWNER,
+            result.first().role
+        )
+
+        verify(exactly = 1) {
+            tripMemberRepository.findAllByTripId(tripId)
+        }
+    }
+
+    @Test
+    fun `getTripMembers returns members for accepted member`() {
+
+        val trip = Trip(
+            id = tripId,
+            ownerId = userId,
+            name = "Bali Trip",
+            destination = "Bali",
+            startDate = LocalDate.of(2026, 9, 10),
+            endDate = LocalDate.of(2026, 9, 18),
+            status = TripStatus.DRAFT
+        )
+
+        val member = TripMember(
+            id = UUID.randomUUID(),
+            tripId = tripId,
+            userId = otherUserId,
+            role = TripMemberRole.MEMBER,
+            status = TripMemberStatus.ACCEPTED
+        )
+
+        every {
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip)
+
+        every {
+            tripMemberRepository.findByTripIdAndUserId(
+                tripId,
+                otherUserId
+            )
+        } returns member
+
+        every {
+            tripMemberRepository.findAllByTripId(tripId)
+        } returns listOf(member)
+
+        val result = tripService.getTripMembers(
+            userId = otherUserId,
+            tripId = tripId
+        )
+
+        assertEquals(1, result.size)
+        assertEquals(
+            otherUserId.toString(),
+            result.first().userId
+        )
+    }
+
+    @Test
+    fun `getTripMembers rejects pending member`() {
+
+        val trip = Trip(
+            id = tripId,
+            ownerId = userId,
+            name = "Bali Trip",
+            destination = "Bali",
+            startDate = LocalDate.of(2026, 9, 10),
+            endDate = LocalDate.of(2026, 9, 18),
+            status = TripStatus.DRAFT
+        )
+
+        val member = TripMember(
+            id = UUID.randomUUID(),
+            tripId = tripId,
+            userId = otherUserId,
+            role = TripMemberRole.MEMBER,
+            status = TripMemberStatus.PENDING
+        )
+
+        every {
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip)
+
+        every {
+            tripMemberRepository.findByTripIdAndUserId(
+                tripId,
+                otherUserId
+            )
+        } returns member
+
+        assertThrows<IllegalAccessException> {
+            tripService.getTripMembers(
+                userId = otherUserId,
+                tripId = tripId
+            )
+        }
+
+        verify(exactly = 0) {
+            tripMemberRepository.findAllByTripId(any())
+        }
+    }
+
+    @Test
+    fun `getTripMembers rejects non member`() {
+
+        val trip = Trip(
+            id = tripId,
+            ownerId = userId,
+            name = "Bali Trip",
+            destination = "Bali",
+            startDate = LocalDate.of(2026, 9, 10),
+            endDate = LocalDate.of(2026, 9, 18),
+            status = TripStatus.DRAFT
+        )
+
+        every {
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip)
+
+        every {
+            tripMemberRepository.findByTripIdAndUserId(
+                tripId,
+                otherUserId
+            )
+        } returns null
+
+        assertThrows<IllegalAccessException> {
+            tripService.getTripMembers(
+                userId = otherUserId,
+                tripId = tripId
+            )
+        }
+
+        verify(exactly = 0) {
+            tripMemberRepository.findAllByTripId(any())
+        }
+    }
+
+    @Test
+    fun `getTrips returns trips where user is accepted member`() {
+
+        val ownedTrip = Trip(
+            id = UUID.randomUUID(),
+            ownerId = userId,
+            name = "My Trip",
+            destination = "Delhi",
+            startDate = LocalDate.of(2026, 9, 10),
+            endDate = LocalDate.of(2026, 9, 12),
+            status = TripStatus.DRAFT
+        )
+
+        val sharedTrip = Trip(
+            id = UUID.randomUUID(),
+            ownerId = otherUserId,
+            name = "Shared Bali Trip",
+            destination = "Bali",
+            startDate = LocalDate.of(2026, 10, 10),
+            endDate = LocalDate.of(2026, 10, 18),
+            status = TripStatus.DRAFT
+        )
+
+        every {
+            tripRepository.findAllAccessibleTrips(
+                userId = userId,
+                status = TripMemberStatus.ACCEPTED
+            )
+        } returns listOf(ownedTrip, sharedTrip)
+
+        val result = tripService.getTrips(
+            userId = userId,
+            filter = null
+        )
+
+        assertEquals(2, result.size)
+        assertEquals("My Trip", result[0].name)
+        assertEquals("Shared Bali Trip", result[1].name)
+    }
+
+    @Test
+    fun `getTrips filters accessible trips by status`() {
+
+        val sharedUpcomingTrip = Trip(
+            id = UUID.randomUUID(),
+            ownerId = otherUserId,
+            name = "Shared Trip",
+            destination = "Dubai",
+            startDate = LocalDate.of(2026, 10, 10),
+            endDate = LocalDate.of(2026, 10, 15),
+            status = TripStatus.UPCOMING
+        )
+
+        every {
+            tripRepository.findAllAccessibleTripsByStatus(
+                userId = userId,
+                memberStatus = TripMemberStatus.ACCEPTED,
+                tripStatus = TripStatus.UPCOMING
+            )
+        } returns listOf(sharedUpcomingTrip)
+
+        val filter = TripFilterInput(
+            search = null,
+            status = TripStatus.UPCOMING
+        )
+
+        val result = tripService.getTrips(
+            userId = userId,
+            filter = filter
+        )
+
+        assertEquals(1, result.size)
+        assertEquals("Shared Trip", result.first().name)
+
+        verify(exactly = 1) {
+            tripRepository.findAllAccessibleTripsByStatus(
+                userId = userId,
+                memberStatus = TripMemberStatus.ACCEPTED,
+                tripStatus = TripStatus.UPCOMING
             )
         }
     }
