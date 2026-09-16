@@ -4,6 +4,9 @@ import com.trippoint.backend.activity.model.ActivityTarget
 import com.trippoint.backend.activity.service.ActivityLogService
 import com.trippoint.backend.auth.entity.User
 import com.trippoint.backend.auth.repository.UserRepository
+import com.trippoint.backend.notification.event.NotificationEventPublisher
+import com.trippoint.backend.notification.model.NotificationCategory
+import com.trippoint.backend.notification.model.NotificationType
 import com.trippoint.backend.trip.entity.Trip
 import com.trippoint.backend.trip.entity.TripMember
 import com.trippoint.backend.trip.graphql.input.CreateTripInput
@@ -33,6 +36,7 @@ class TripServiceTest {
     private lateinit var tripService: TripService
     private lateinit var tripAccessService: TripAccessService
     private lateinit var activityLogService: ActivityLogService
+    private lateinit var notificationEventPublisher: NotificationEventPublisher
 
     private val userId = UUID.randomUUID()
     private val otherUserId = UUID.randomUUID()
@@ -45,6 +49,7 @@ class TripServiceTest {
         tripMemberRepository = mockk()
         userRepository = mockk()
         activityLogService = mockk(relaxed = true)
+        notificationEventPublisher = mockk(relaxed = true)
 
         tripAccessService = TripAccessService(
             tripRepository,
@@ -57,6 +62,7 @@ class TripServiceTest {
             userRepository = userRepository,
             tripAccessService = tripAccessService,
             activityLogService = activityLogService,
+            notificationEventPublisher = notificationEventPublisher,
         )
     }
 
@@ -527,12 +533,23 @@ class TripServiceTest {
     @Test
     fun `acceptTripInvitation accepts pending invitation`() {
 
+        val ownerId = UUID.randomUUID()
+
         val member = TripMember(
             id = UUID.randomUUID(),
             tripId = tripId,
             userId = userId,
             role = TripMemberRole.MEMBER,
             status = TripMemberStatus.PENDING
+        )
+
+        val trip = Trip(
+            ownerId = ownerId,
+            name = "Bali Trip",
+            destination = "Bali",
+            startDate = LocalDate.of(2026, 9, 10),
+            endDate = LocalDate.of(2026, 9, 18),
+            status = TripStatus.DRAFT
         )
 
         every {
@@ -546,16 +563,159 @@ class TripServiceTest {
             tripMemberRepository.save(member)
         } returns member
 
+        every {
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip)
+
+        every {
+            notificationEventPublisher.publish(any())
+        } just Runs
+
         val result = tripService.acceptTripInvitation(
             userId,
             tripId
         )
 
-        assertEquals(TripMemberStatus.ACCEPTED, result.status)
+        assertEquals(
+            TripMemberStatus.ACCEPTED,
+            result.status
+        )
+
         assertNotNull(result.joinedAt)
 
         verify {
             tripMemberRepository.save(member)
+        }
+
+        verify {
+            notificationEventPublisher.publish(
+                match {
+                    it.recipientUserId == ownerId &&
+                            it.actorUserId == userId &&
+                            it.tripId == tripId &&
+                            it.type == NotificationType.INVITATION_ACCEPTED
+                }
+            )
+        }
+    }
+
+    @Test
+    fun `acceptTripInvitation publishes invitation accepted notification`() {
+
+        val ownerId = UUID.randomUUID()
+
+        val member = TripMember(
+            id = UUID.randomUUID(),
+            tripId = tripId,
+            userId = userId,
+            role = TripMemberRole.MEMBER,
+            status = TripMemberStatus.PENDING
+        )
+
+        val trip = Trip(
+            ownerId = ownerId,
+            name = "Bali Trip",
+            destination = "Bali",
+            startDate = LocalDate.of(2026, 9, 10),
+            endDate = LocalDate.of(2026, 9, 18),
+            status = TripStatus.DRAFT
+        )
+
+        every {
+            tripMemberRepository.findByTripIdAndUserId(
+                tripId,
+                userId
+            )
+        } returns member
+
+        every {
+            tripMemberRepository.save(member)
+        } returns member
+
+        every {
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip)
+
+        every {
+            notificationEventPublisher.publish(any())
+        } just Runs
+
+        tripService.acceptTripInvitation(
+            userId,
+            tripId
+        )
+
+        verify(exactly = 1) {
+            notificationEventPublisher.publish(
+                match {
+                    it.recipientUserId == ownerId &&
+                            it.actorUserId == userId &&
+                            it.tripId == tripId &&
+                            it.category == NotificationCategory.MEMBER &&
+                            it.type == NotificationType.INVITATION_ACCEPTED &&
+                            it.targetType == "MEMBER" &&
+                            it.targetId == userId
+                }
+            )
+        }
+    }
+
+    @Test
+    fun `declineTripInvitation publishes invitation declined notification`() {
+
+        val ownerId = UUID.randomUUID()
+
+        val member = TripMember(
+            id = UUID.randomUUID(),
+            tripId = tripId,
+            userId = userId,
+            role = TripMemberRole.MEMBER,
+            status = TripMemberStatus.PENDING
+        )
+
+        val trip = Trip(
+            ownerId = ownerId,
+            name = "Bali Trip",
+            destination = "Bali",
+            startDate = LocalDate.of(2026, 9, 10),
+            endDate = LocalDate.of(2026, 9, 18),
+            status = TripStatus.DRAFT
+        )
+
+        every {
+            tripMemberRepository.findByTripIdAndUserId(
+                tripId,
+                userId
+            )
+        } returns member
+
+        every {
+            tripMemberRepository.save(member)
+        } returns member
+
+        every {
+            tripRepository.findById(tripId)
+        } returns Optional.of(trip)
+
+        every {
+            notificationEventPublisher.publish(any())
+        } just Runs
+
+        tripService.declineTripInvitation(
+            userId,
+            tripId
+        )
+
+        verify(exactly = 1) {
+            notificationEventPublisher.publish(
+                match {
+                    it.recipientUserId == ownerId &&
+                            it.actorUserId == userId &&
+                            it.tripId == tripId &&
+                            it.category == NotificationCategory.MEMBER &&
+                            it.type == NotificationType.INVITATION_DECLINED
+                }
+            )
         }
     }
 

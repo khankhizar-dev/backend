@@ -1,0 +1,246 @@
+enum NotificationCategory {
+    TRIP
+    MEMBER
+    BOOKING
+    EXPENSE
+    CHECKLIST
+    DOCUMENT
+    CHAT
+    MENTION
+    REMINDER
+    SYSTEM
+}
+
+enum NotificationType {
+    TRIP_INVITATION
+    TRIP_UPDATED
+    INVITATION_ACCEPTED
+    INVITATION_DECLINED
+    MEMBER_ADDED
+    MEMBER_REMOVED
+
+    BOOKING_CREATED
+    BOOKING_CONFIRMED
+    BOOKING_UPDATED
+    BOOKING_CANCELLED
+
+    EXPENSE_ADDED
+    EXPENSE_UPDATED
+    EXPENSE_SETTLEMENT
+
+    CHECKLIST_ASSIGNED
+    CHECKLIST_DUE
+    CHECKLIST_OVERDUE
+    CHECKLIST_COMPLETED
+
+    DOCUMENT_UPLOADED
+    DOCUMENT_UPDATED
+    DOCUMENT_EXPIRING
+
+    CHAT_MENTION
+    CHAT_REPLY
+
+    REMINDER_DUE
+    REMINDER_OVERDUE
+
+    SYSTEM_ALERT
+}
+
+type Notification {
+    id: ID!
+    recipientUserId: ID!
+    actorUserId: ID
+    tripId: ID
+
+    category: NotificationCategory!
+    type: NotificationType!
+
+    title: String!
+    message: String!
+
+    targetType: String
+    targetId: ID
+    targetName: String
+
+    isRead: Boolean!
+    isArchived: Boolean!
+    isDeleted: Boolean!
+
+    snoozedUntil: String
+
+    createdAt: String!
+    readAt: String
+    archivedAt: String
+    deletedAt: String
+}
+
+type NotificationActionResult {
+    success: Boolean!
+    count: Int!
+}
+
+extend type Query {
+
+    notifications(
+        limit: Int
+        category: NotificationCategory
+        beforeCursor: ID
+    ): [Notification!]!
+
+    notification(
+        id: ID!
+    ): Notification
+
+    unreadNotificationCount: Int!
+}
+
+extend type Mutation {
+
+    markNotificationRead(
+        id: ID!
+    ): Notification!
+
+    markAllNotificationsRead: NotificationActionResult!
+
+    archiveNotification(
+        id: ID!
+    ): Notification!
+
+    snoozeNotification(
+        id: ID!
+        snoozedUntil: String!
+    ): Notification!
+
+    clearNotificationSnooze(
+        id: ID!
+    ): Notification!
+
+    deleteNotification(
+        id: ID!
+    ): Notification!
+
+    clearAllNotifications: NotificationActionResult!
+}
+
+extend type Subscription {
+    notificationReceived: Notification
+}
+
+type NotificationPreference {
+    id: ID!
+    userId: ID!
+
+    pushEnabled: Boolean!
+    emailEnabled: Boolean!
+    inAppEnabled: Boolean!
+    smsEnabled: Boolean!
+    digestEnabled: Boolean!
+
+    quietHoursEnabled: Boolean!
+    quietHoursStart: String
+    quietHoursEnd: String
+
+    createdAt: String!
+    updatedAt: String!
+}
+
+input UpdateNotificationPreferencesInput {
+    pushEnabled: Boolean
+    emailEnabled: Boolean
+    inAppEnabled: Boolean
+    smsEnabled: Boolean
+    digestEnabled: Boolean
+    quietHoursEnabled: Boolean
+    quietHoursStart: String
+    quietHoursEnd: String
+}
+
+extend type Query {
+    notificationPreferences: NotificationPreference!
+}
+
+extend type Mutation {
+    updateNotificationPreferences(
+        input: UpdateNotificationPreferencesInput!
+    ): NotificationPreference!
+}
+
+enum ReminderStatus {
+    UPCOMING
+    OVERDUE
+    COMPLETED
+}
+
+type Reminder {
+    id: ID!
+    userId: ID!
+    tripId: ID
+
+    title: String!
+    description: String
+
+    dueAt: String!
+    status: ReminderStatus!
+
+    snoozedUntil: String
+
+    recurring: Boolean!
+    recurrenceRule: String
+
+    completedAt: String
+    createdAt: String!
+    updatedAt: String!
+}
+
+input CreateReminderInput {
+    tripId: ID
+    title: String!
+    description: String
+    dueAt: String!
+    recurring: Boolean
+    recurrenceRule: String
+}
+
+input UpdateReminderInput {
+    title: String
+    description: String
+    dueAt: String
+    recurring: Boolean
+    recurrenceRule: String
+}
+
+extend type Query {
+    reminders(
+        limit: Int
+        status: ReminderStatus
+        tripId: ID
+    ): [Reminder!]!
+
+    reminder(
+        id: ID!
+    ): Reminder
+}
+
+extend type Mutation {
+    createReminder(
+        input: CreateReminderInput!
+    ): Reminder!
+
+    updateReminder(
+        id: ID!
+        input: UpdateReminderInput!
+    ): Reminder!
+
+    completeReminder(
+        id: ID!
+    ): Reminder!
+
+    snoozeReminder(
+        id: ID!
+        snoozedUntil: String!
+    ): Reminder!
+
+    deleteReminder(
+        id: ID!
+    ): Boolean!
+}

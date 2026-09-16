@@ -17,6 +17,7 @@ import com.trippoint.backend.booking.model.BookingType
 import com.trippoint.backend.booking.repository.BookingEventRepository
 import com.trippoint.backend.booking.repository.BookingRepository
 import com.trippoint.backend.booking.repository.BookingTravellerRepository
+import com.trippoint.backend.notification.event.NotificationEventPublisher
 import com.trippoint.backend.trip.entity.Trip
 import com.trippoint.backend.trip.entity.TripMember
 import com.trippoint.backend.trip.model.TripMemberRole
@@ -43,6 +44,7 @@ class BookingServiceTest {
     private lateinit var tripMemberRepository: TripMemberRepository
     private lateinit var tripAccessService: TripAccessService
     private lateinit var activityLogService: ActivityLogService
+    private lateinit var notificationEventPublisher: NotificationEventPublisher
 
     private lateinit var service: BookingService
     private lateinit var objectMapper: ObjectMapper
@@ -62,6 +64,14 @@ class BookingServiceTest {
         tripRepository = mockk()
         tripMemberRepository = mockk()
         activityLogService = mockk(relaxed = true)
+        notificationEventPublisher = mockk(relaxed = true)
+
+        every {
+            tripMemberRepository.findAllByTripIdAndStatus(
+                any(),
+                TripMemberStatus.ACCEPTED
+            )
+        } returns emptyList()
 
         tripAccessService = TripAccessService(
             tripRepository,
@@ -76,7 +86,9 @@ class BookingServiceTest {
             bookingEventRepository,
             tripAccessService,
             objectMapper,
-            activityLogService
+            activityLogService,
+            notificationEventPublisher,
+            tripMemberRepository
         )
     }
 

@@ -20,6 +20,12 @@ import com.trippoint.backend.booking.model.BookingStatus
 import com.trippoint.backend.booking.repository.BookingEventRepository
 import com.trippoint.backend.booking.repository.BookingRepository
 import com.trippoint.backend.booking.repository.BookingTravellerRepository
+import com.trippoint.backend.notification.event.NotificationEvent
+import com.trippoint.backend.notification.event.NotificationEventPublisher
+import com.trippoint.backend.notification.model.NotificationCategory
+import com.trippoint.backend.notification.model.NotificationType
+import com.trippoint.backend.trip.model.TripMemberStatus
+import com.trippoint.backend.trip.repository.TripMemberRepository
 import com.trippoint.backend.trip.repository.TripRepository
 import com.trippoint.backend.trip.service.TripAccessService
 import org.springframework.stereotype.Service
@@ -37,7 +43,9 @@ class BookingService(
     private val bookingEventRepository: BookingEventRepository,
     private val tripAccessService: TripAccessService,
     private val objectMapper: ObjectMapper,
-    private val activityLogService: ActivityLogService
+    private val activityLogService: ActivityLogService,
+    private val notificationEventPublisher: NotificationEventPublisher,
+    private val tripMemberRepository: TripMemberRepository
 ) {
 
     @Transactional
@@ -137,6 +145,15 @@ class BookingService(
                 description = "Booking created manually",
                 createdBy = userId
             )
+        )
+
+        notifyTripMembers(
+            tripId = tripId,
+            actorUserId = userId,
+            type = NotificationType.BOOKING_CREATED,
+            title = "Booking added",
+            message = "A new booking \"${booking.title}\" was added to the trip",
+            booking = booking
         )
 
         activityLogService.log(
@@ -365,6 +382,37 @@ class BookingService(
 
         val savedBooking = bookingRepository.save(booking)
 
+        if (statusChanged) {
+            when (savedBooking.status) {
+
+                BookingStatus.CONFIRMED -> {
+                    notifyTripMembers(
+                        tripId = tripId,
+                        actorUserId = userId,
+                        type = NotificationType.BOOKING_CONFIRMED,
+                        title = "Booking confirmed",
+                        message = "Booking \"${savedBooking.title}\" has been confirmed",
+                        booking = savedBooking
+                    )
+                }
+
+                BookingStatus.CANCELLED -> {
+                    notifyTripMembers(
+                        tripId = tripId,
+                        actorUserId = userId,
+                        type = NotificationType.BOOKING_CANCELLED,
+                        title = "Booking cancelled",
+                        message = "Booking \"${savedBooking.title}\" has been cancelled",
+                        booking = savedBooking
+                    )
+                }
+
+                else -> {
+                    // No notification for other status transitions yet.
+                }
+            }
+        }
+
         if (!statusChanged) {
             bookingEventRepository.save(
                 BookingEvent(
@@ -373,6 +421,15 @@ class BookingService(
                     description = "Booking details updated",
                     createdBy = userId
                 )
+            )
+
+            notifyTripMembers(
+                tripId = tripId,
+                actorUserId = userId,
+                type = NotificationType.BOOKING_UPDATED,
+                title = "Booking updated",
+                message = "Booking \"${savedBooking.title}\" was updated",
+                booking = savedBooking
             )
         }
 
@@ -403,6 +460,15 @@ class BookingService(
             bookingId,
             tripId
         ) ?: throw IllegalArgumentException("Booking not found")
+
+        notifyTripMembers(
+            tripId = tripId,
+            actorUserId = userId,
+            type = NotificationType.BOOKING_CANCELLED,
+            title = "Booking removed",
+            message = "Booking \"${booking.title}\" was removed from the trip",
+            booking = booking
+        )
 
         activityLogService.log(
         tripId = tripId,
@@ -662,5 +728,42 @@ class BookingService(
         require(requested in allowed) {
             "Invalid booking status transition: $current -> $requested"
         }
+    }
+
+    private fun notifyTripMembers(
+        tripId: UUID,
+        actorUserId: UUID,
+        type: NotificationType,
+        title: String,
+        message: String,
+        booking: Booking
+    ) {
+        val members = tripMemberRepository.findAllByTripIdAndStatus(
+            tripId,
+            TripMemberStatus.ACCEPTED
+        )
+
+        members
+            .asSequence()
+            .map { it.userId }
+            .filter { it != actorUserId }
+            .distinct()
+            .forEach { recipientUserId ->
+
+                notificationEventPublisher.publish(
+                    NotificationEvent(
+                        recipientUserId = recipientUserId,
+                        actorUserId = actorUserId,
+                        tripId = tripId,
+                        category = NotificationCategory.BOOKING,
+                        type = type,
+                        title = title,
+                        message = message,
+                        targetType = "BOOKING",
+                        targetId = booking.id,
+                        targetName = booking.title
+                    )
+                )
+            }
     }
 }

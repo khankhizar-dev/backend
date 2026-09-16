@@ -4,9 +4,11 @@ import org.springframework.boot.CommandLineRunner
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
+import org.springframework.scheduling.annotation.EnableScheduling
 import java.util.TimeZone
 import javax.sql.DataSource
 
+@EnableScheduling
 @SpringBootApplication
 class BackendApplication
 

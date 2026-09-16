@@ -3,6 +3,10 @@ package com.trippoint.backend.trip.service
 import com.trippoint.backend.activity.model.ActivityTarget
 import com.trippoint.backend.activity.service.ActivityLogService
 import com.trippoint.backend.auth.repository.UserRepository
+import com.trippoint.backend.notification.event.NotificationEvent
+import com.trippoint.backend.notification.event.NotificationEventPublisher
+import com.trippoint.backend.notification.model.NotificationCategory
+import com.trippoint.backend.notification.model.NotificationType
 import com.trippoint.backend.trip.entity.Trip
 import com.trippoint.backend.trip.entity.TripMember
 import com.trippoint.backend.trip.graphql.TripMemberResponse
@@ -27,7 +31,8 @@ class TripService(
     private val tripMemberRepository: TripMemberRepository,
     private val userRepository: UserRepository,
     private val tripAccessService: TripAccessService,
-    private val activityLogService: ActivityLogService
+    private val activityLogService: ActivityLogService,
+    private val notificationEventPublisher: NotificationEventPublisher
 ) {
 
     @Transactional
@@ -182,6 +187,22 @@ class TripService(
 
         val savedMember = tripMemberRepository.save(member)
 
+        notificationEventPublisher.publish(
+            NotificationEvent(
+                recipientUserId = invitedUser.id
+                    ?: throw IllegalStateException("User ID cannot be null"),
+                actorUserId = ownerId,
+                tripId = trip.id,
+                category = NotificationCategory.MEMBER,
+                type = NotificationType.TRIP_INVITATION,
+                title = "Trip invitation",
+                message = "You have been invited to join \"${trip.name}\"",
+                targetType = "TRIP",
+                targetId = trip.id,
+                targetName = trip.name
+            )
+        )
+
         activityLogService.log(
             tripId = trip.id,
             userId = ownerId,
@@ -229,6 +250,26 @@ class TripService(
 
         val savedMember = tripMemberRepository.save(member)
 
+        val trip = tripRepository.findById(tripId)
+            .orElseThrow {
+                IllegalArgumentException("Trip not found")
+            }
+
+        notificationEventPublisher.publish(
+            NotificationEvent(
+                recipientUserId = trip.ownerId,
+                actorUserId = userId,
+                tripId = tripId,
+                category = NotificationCategory.MEMBER,
+                type = NotificationType.INVITATION_ACCEPTED,
+                title = "Invitation accepted",
+                message = "A member accepted your invitation",
+                targetType = "MEMBER",
+                targetId = userId,
+                targetName = "Member $userId"
+            )
+        )
+
         activityLogService.log(
             tripId = tripId,
             userId = userId,
@@ -258,6 +299,26 @@ class TripService(
         member.status = TripMemberStatus.DECLINED
 
         val savedMember = tripMemberRepository.save(member)
+
+        val trip = tripRepository.findById(tripId)
+            .orElseThrow {
+                IllegalArgumentException("Trip not found")
+            }
+
+        notificationEventPublisher.publish(
+            NotificationEvent(
+                recipientUserId = trip.ownerId,
+                actorUserId = userId,
+                tripId = tripId,
+                category = NotificationCategory.MEMBER,
+                type = NotificationType.INVITATION_DECLINED,
+                title = "Invitation declined",
+                message = "A member declined your trip invitation",
+                targetType = "MEMBER",
+                targetId = userId,
+                targetName = "Member $userId"
+            )
+        )
 
         activityLogService.log(
             tripId = tripId,
@@ -461,6 +522,26 @@ class TripService(
             )
         }
 
+        val trip = tripRepository.findById(tripId)
+            .orElseThrow {
+                IllegalArgumentException("Trip not found")
+            }
+
+        notificationEventPublisher.publish(
+            NotificationEvent(
+                recipientUserId = memberUserId,
+                actorUserId = currentUserId,
+                tripId = tripId,
+                category = NotificationCategory.MEMBER,
+                type = NotificationType.MEMBER_REMOVED,
+                title = "Removed from trip",
+                message = "You have been removed from \"${trip.name}\"",
+                targetType = "TRIP",
+                targetId = tripId,
+                targetName = trip.name
+            )
+        )
+
         activityLogService.log(
             tripId = tripId,
             userId = currentUserId,
@@ -499,6 +580,26 @@ class TripService(
                 "Trip owner cannot leave the trip"
             )
         }
+
+        val trip = tripRepository.findById(tripId)
+            .orElseThrow {
+                IllegalArgumentException("Trip not found")
+            }
+
+        notificationEventPublisher.publish(
+            NotificationEvent(
+                recipientUserId = trip.ownerId,
+                actorUserId = currentUserId,
+                tripId = tripId,
+                category = NotificationCategory.MEMBER,
+                type = NotificationType.MEMBER_REMOVED,
+                title = "Member left trip",
+                message = "A member left \"${trip.name}\"",
+                targetType = "MEMBER",
+                targetId = currentUserId,
+                targetName = "Member $currentUserId"
+            )
+        )
 
         activityLogService.log(
             tripId = tripId,
