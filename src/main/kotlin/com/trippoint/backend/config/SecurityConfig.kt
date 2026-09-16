@@ -21,6 +21,7 @@ class SecurityConfig(
                     .requestMatchers("/graphql").permitAll()
                     .requestMatchers("/graphiql").permitAll()
                     .requestMatchers("/error").permitAll()
+                    .requestMatchers("/graphql/ws").permitAll()
                     .anyRequest().permitAll()
             }
             .httpBasic { it.disable() }

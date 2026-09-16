@@ -47,4 +47,16 @@ class TripAccessService(
             )
         }
     }
+
+    fun isOwner(
+        tripId: UUID,
+        userId: UUID
+    ): Boolean {
+        val trip = tripRepository.findById(tripId)
+            .orElseThrow {
+                IllegalArgumentException("Trip not found")
+            }
+
+        return trip.ownerId == userId
+    }
 }

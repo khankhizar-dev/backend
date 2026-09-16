@@ -1,5 +1,7 @@
 package com.trippoint.backend.trip.service
 
+import com.trippoint.backend.activity.model.ActivityTarget
+import com.trippoint.backend.activity.service.ActivityLogService
 import com.trippoint.backend.auth.repository.UserRepository
 import com.trippoint.backend.trip.entity.Trip
 import com.trippoint.backend.trip.entity.TripMember
@@ -24,7 +26,8 @@ class TripService(
     private val tripRepository: TripRepository,
     private val tripMemberRepository: TripMemberRepository,
     private val userRepository: UserRepository,
-    private val tripAccessService: TripAccessService
+    private val tripAccessService: TripAccessService,
+    private val activityLogService: ActivityLogService
 ) {
 
     @Transactional
@@ -70,6 +73,14 @@ class TripService(
                 status = TripMemberStatus.ACCEPTED,
                 joinedAt = LocalDateTime.now()
             )
+        )
+
+        activityLogService.log(
+            tripId = savedTrip.id,
+            userId = userId,
+            action = "created trip",
+            targetType = ActivityTarget.TRIP,
+            targetName = savedTrip.name
         )
 
         return TripResponse.from(savedTrip)
@@ -169,9 +180,17 @@ class TripService(
             status = TripMemberStatus.PENDING
         )
 
-        return TripMemberResponse.from(
-            tripMemberRepository.save(member)
+        val savedMember = tripMemberRepository.save(member)
+
+        activityLogService.log(
+            tripId = trip.id,
+            userId = ownerId,
+            action = "invited a member",
+            targetType = ActivityTarget.MEMBER,
+            targetName = normalizedEmail
         )
+
+        return TripMemberResponse.from(savedMember)
     }
 
     @Transactional(readOnly = true)
@@ -208,9 +227,17 @@ class TripService(
         member.status = TripMemberStatus.ACCEPTED
         member.joinedAt = LocalDateTime.now()
 
-        return TripMemberResponse.from(
-            tripMemberRepository.save(member)
+        val savedMember = tripMemberRepository.save(member)
+
+        activityLogService.log(
+            tripId = tripId,
+            userId = userId,
+            action = "accepted trip invitation",
+            targetType = ActivityTarget.MEMBER,
+            targetName = "Member $userId"
         )
+
+        return TripMemberResponse.from(savedMember)
     }
 
     @Transactional
@@ -230,9 +257,17 @@ class TripService(
 
         member.status = TripMemberStatus.DECLINED
 
-        return TripMemberResponse.from(
-            tripMemberRepository.save(member)
+        val savedMember = tripMemberRepository.save(member)
+
+        activityLogService.log(
+            tripId = tripId,
+            userId = userId,
+            action = "declined trip invitation",
+            targetType = ActivityTarget.MEMBER,
+            targetName = "Member $userId"
         )
+
+        return TripMemberResponse.from(savedMember)
     }
 
     @Transactional(readOnly = true)
@@ -301,9 +336,17 @@ class TripService(
             trip.status = it
         }
 
-        return TripResponse.from(
-            tripRepository.save(trip)
+        val savedTrip = tripRepository.save(trip)
+
+        activityLogService.log(
+            tripId = tripId,
+            userId = userId,
+            action = "updated trip",
+            targetType = ActivityTarget.TRIP,
+            targetName = savedTrip.name
         )
+
+        return TripResponse.from(savedTrip)
     }
 
     @Transactional
@@ -376,6 +419,14 @@ class TripService(
                 IllegalArgumentException("Trip not found")
             }
 
+        activityLogService.log(
+            tripId = tripId,
+            userId = userId,
+            action = "deleted trip",
+            targetType = ActivityTarget.TRIP,
+            targetName = trip.name
+        )
+
         tripMemberRepository.deleteAllByTripId(tripId)
 
         tripRepository.delete(trip)
@@ -410,6 +461,14 @@ class TripService(
             )
         }
 
+        activityLogService.log(
+            tripId = tripId,
+            userId = currentUserId,
+            action = "removed a member",
+            targetType = ActivityTarget.MEMBER,
+            targetName = "Member $memberUserId"
+        )
+
         tripMemberRepository.delete(member)
 
         return true
@@ -440,6 +499,14 @@ class TripService(
                 "Trip owner cannot leave the trip"
             )
         }
+
+        activityLogService.log(
+            tripId = tripId,
+            userId = currentUserId,
+            action = "left trip",
+            targetType = ActivityTarget.MEMBER,
+            targetName = "Member $currentUserId"
+        )
 
         tripMemberRepository.delete(member)
 

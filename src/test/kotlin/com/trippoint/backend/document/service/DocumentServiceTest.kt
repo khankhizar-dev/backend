@@ -1,5 +1,6 @@
 package com.trippoint.backend.document.service
 
+import com.trippoint.backend.activity.service.ActivityLogService
 import com.trippoint.backend.document.domain.Document
 import com.trippoint.backend.document.domain.DocumentCategory
 import com.trippoint.backend.document.domain.DocumentSource
@@ -31,6 +32,7 @@ class DocumentServiceTest {
     private lateinit var tripRepository: TripRepository
     private lateinit var tripMemberRepository: TripMemberRepository
     private lateinit var tripAccessService: TripAccessService
+    private lateinit var activityLogService: ActivityLogService
 
     private lateinit var service: DocumentService
 
@@ -48,6 +50,7 @@ class DocumentServiceTest {
 
         tripRepository = mock(TripRepository::class.java)
         tripMemberRepository = mock(TripMemberRepository::class.java)
+        activityLogService = mock(ActivityLogService::class.java)
 
         tripAccessService = TripAccessService(
             tripRepository = tripRepository,
@@ -57,7 +60,8 @@ class DocumentServiceTest {
         service = DocumentService(
             documentRepository = documentRepository,
             documentStorageService = documentStorageService,
-            tripAccessService = tripAccessService
+            tripAccessService = tripAccessService,
+            activityLogService = activityLogService
         )
     }
 

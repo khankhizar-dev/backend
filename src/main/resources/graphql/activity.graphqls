@@ -1,0 +1,33 @@
+enum ActivityTarget {
+    TRIP
+    TASK
+    BOOKING
+    EXPENSE
+    DOCUMENT
+    MEMBER
+    CHAT
+}
+
+type ActivityLog {
+    id: ID!
+    tripId: ID!
+    userId: ID!
+    userName: String!
+    userPhotoUrl: String
+    action: String!
+    targetType: ActivityTarget!
+    targetName: String!
+    timestamp: String!
+}
+
+extend type Query {
+    activityLogs(
+        tripId: ID!
+        limit: Int
+        beforeCursor: ID
+    ): [ActivityLog!]!
+}
+
+type Subscription {
+    activityLogged(tripId: ID!): ActivityLog
+}

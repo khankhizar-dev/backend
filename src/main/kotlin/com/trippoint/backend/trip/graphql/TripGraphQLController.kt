@@ -57,14 +57,16 @@ class TripGraphQLController(
         authentication: Authentication?
     ): UUID {
 
-        val auth = authentication
-            ?: SecurityContextHolder.getContext().authentication
+        val principals = sequenceOf(
+            authentication?.principal,
+            SecurityContextHolder.getContext().authentication?.principal
+        )
+
+        return principals
+            .filterIsInstance<UserPrincipal>()
+            .firstOrNull()
+            ?.userId
             ?: throw IllegalArgumentException("User not authenticated")
-
-        val principal = auth.principal as? UserPrincipal
-            ?: throw IllegalArgumentException("Invalid authentication principal")
-
-        return principal.userId
     }
 
     @QueryMapping
