@@ -1,5 +1,7 @@
 package com.trippoint.backend.trip.service
 
+import com.trippoint.backend.activity.model.ActivityTarget
+import com.trippoint.backend.activity.service.ActivityLogService
 import com.trippoint.backend.auth.entity.User
 import com.trippoint.backend.auth.repository.UserRepository
 import com.trippoint.backend.trip.entity.Trip
@@ -30,6 +32,7 @@ class TripServiceTest {
     private lateinit var userRepository: UserRepository
     private lateinit var tripService: TripService
     private lateinit var tripAccessService: TripAccessService
+    private lateinit var activityLogService: ActivityLogService
 
     private val userId = UUID.randomUUID()
     private val otherUserId = UUID.randomUUID()
@@ -41,6 +44,7 @@ class TripServiceTest {
         tripRepository = mockk()
         tripMemberRepository = mockk()
         userRepository = mockk()
+        activityLogService = mockk(relaxed = true)
 
         tripAccessService = TripAccessService(
             tripRepository,
@@ -52,6 +56,7 @@ class TripServiceTest {
             tripMemberRepository = tripMemberRepository,
             userRepository = userRepository,
             tripAccessService = tripAccessService,
+            activityLogService = activityLogService,
         )
     }
 
@@ -106,6 +111,16 @@ class TripServiceTest {
                             it.role == TripMemberRole.OWNER &&
                             it.status == TripMemberStatus.ACCEPTED
                 }
+            )
+        }
+
+        verify(exactly = 1) {
+            activityLogService.log(
+                tripId = tripId,
+                userId = userId,
+                action = "created trip",
+                targetType = ActivityTarget.TRIP,
+                targetName = "Bali Trip"
             )
         }
     }

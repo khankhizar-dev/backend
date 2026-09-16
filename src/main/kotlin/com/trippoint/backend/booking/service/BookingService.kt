@@ -2,6 +2,8 @@ package com.trippoint.backend.booking.service
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.trippoint.backend.activity.model.ActivityTarget
+import com.trippoint.backend.activity.service.ActivityLogService
 import com.trippoint.backend.booking.entity.Booking
 import com.trippoint.backend.booking.entity.BookingEvent
 import com.trippoint.backend.booking.entity.BookingTraveller
@@ -34,7 +36,8 @@ class BookingService(
     private val bookingTravellerRepository: BookingTravellerRepository,
     private val bookingEventRepository: BookingEventRepository,
     private val tripAccessService: TripAccessService,
-    private val objectMapper: ObjectMapper
+    private val objectMapper: ObjectMapper,
+    private val activityLogService: ActivityLogService
 ) {
 
     @Transactional
@@ -134,6 +137,14 @@ class BookingService(
                 description = "Booking created manually",
                 createdBy = userId
             )
+        )
+
+        activityLogService.log(
+            tripId = tripId,
+            userId = userId,
+            action = "created booking",
+            targetType = ActivityTarget.BOOKING,
+            targetName = booking.title
         )
 
         return BookingResponse.from(booking)
@@ -365,6 +376,14 @@ class BookingService(
             )
         }
 
+        activityLogService.log(
+            tripId = tripId,
+            userId = userId,
+            action = "updated booking",
+            targetType = ActivityTarget.BOOKING,
+            targetName = savedBooking.title
+        )
+
         return BookingResponse.from(savedBooking)
     }
 
@@ -384,6 +403,14 @@ class BookingService(
             bookingId,
             tripId
         ) ?: throw IllegalArgumentException("Booking not found")
+
+        activityLogService.log(
+        tripId = tripId,
+        userId = userId,
+        action = "deleted booking",
+        targetType = ActivityTarget.BOOKING,
+        targetName = booking.title
+        )
 
         bookingEventRepository.deleteAll(
             bookingEventRepository

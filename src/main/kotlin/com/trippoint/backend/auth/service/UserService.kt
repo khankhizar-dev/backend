@@ -96,4 +96,15 @@ class UserService(
             userRepository.save(user)
         )
     }
+
+    @Transactional(readOnly = true)
+    fun getProfiles(userIds: Collection<UUID>): Map<UUID, UserResponse> {
+        if (userIds.isEmpty()) {
+            return emptyMap()
+        }
+
+        return userRepository.findAllById(userIds)
+            .map(UserMapper::toResponse)
+            .associateBy { it.id }
+    }
 }

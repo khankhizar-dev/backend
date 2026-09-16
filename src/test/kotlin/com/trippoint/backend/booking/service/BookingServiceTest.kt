@@ -2,6 +2,7 @@ package com.trippoint.backend.booking.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.trippoint.backend.activity.service.ActivityLogService
 import com.trippoint.backend.booking.entity.Booking
 import com.trippoint.backend.booking.entity.BookingEvent
 import com.trippoint.backend.booking.entity.BookingTraveller
@@ -41,6 +42,7 @@ class BookingServiceTest {
     private lateinit var tripRepository: TripRepository
     private lateinit var tripMemberRepository: TripMemberRepository
     private lateinit var tripAccessService: TripAccessService
+    private lateinit var activityLogService: ActivityLogService
 
     private lateinit var service: BookingService
     private lateinit var objectMapper: ObjectMapper
@@ -59,6 +61,7 @@ class BookingServiceTest {
         bookingEventRepository = mockk()
         tripRepository = mockk()
         tripMemberRepository = mockk()
+        activityLogService = mockk(relaxed = true)
 
         tripAccessService = TripAccessService(
             tripRepository,
@@ -72,7 +75,8 @@ class BookingServiceTest {
             bookingTravellerRepository,
             bookingEventRepository,
             tripAccessService,
-            objectMapper
+            objectMapper,
+            activityLogService
         )
     }
 

@@ -1,6 +1,8 @@
 package com.trippoint.backend.budget.service
 
 import com.trippoint.backend.booking.repository.BookingRepository
+import com.trippoint.backend.activity.model.ActivityTarget
+import com.trippoint.backend.activity.service.ActivityLogService
 import com.trippoint.backend.budget.entity.Expense
 import com.trippoint.backend.budget.graphql.input.CreateExpenseInput
 import com.trippoint.backend.budget.graphql.input.ExpenseFilterInput
@@ -24,7 +26,8 @@ class ExpenseService(
     private val tripRepository: TripRepository,
     private val tripMemberRepository: TripMemberRepository,
     private val bookingRepository: BookingRepository,
-    private val tripAccessService: TripAccessService
+    private val tripAccessService: TripAccessService,
+    private val activityLogService: ActivityLogService
 ) {
 
     @Transactional
@@ -82,7 +85,17 @@ class ExpenseService(
 
         applyConversionIfPossible(expense, budget)
 
-        return expenseRepository.save(expense)
+        val savedExpense = expenseRepository.save(expense)
+
+        activityLogService.log(
+            tripId = tripId,
+            userId = userId,
+            action = "created expense",
+            targetType = ActivityTarget.EXPENSE,
+            targetName = savedExpense.title.ifBlank { "Expense" }
+        )
+
+        return savedExpense
     }
 
     @Transactional(readOnly = true)
@@ -252,7 +265,17 @@ class ExpenseService(
 
         applyConversionIfPossible(expense, budget)
 
-        return expenseRepository.save(expense)
+        val savedExpense = expenseRepository.save(expense)
+
+        activityLogService.log(
+            tripId = tripId,
+            userId = userId,
+            action = "updated expense",
+            targetType = ActivityTarget.EXPENSE,
+            targetName = savedExpense.title.ifBlank { "Expense" }
+        )
+
+        return savedExpense
     }
 
     @Transactional
@@ -286,7 +309,17 @@ class ExpenseService(
 
         expense.archived = true
 
-        return expenseRepository.save(expense)
+        val savedExpense = expenseRepository.save(expense)
+
+        activityLogService.log(
+            tripId = tripId,
+            userId = userId,
+            action = "archived expense",
+            targetType = ActivityTarget.EXPENSE,
+            targetName = savedExpense.title.ifBlank { "Expense" }
+        )
+
+        return savedExpense
     }
 
     private fun getTrip(tripId: UUID) =

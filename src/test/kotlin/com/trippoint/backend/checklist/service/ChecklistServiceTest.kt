@@ -1,5 +1,6 @@
 package com.trippoint.backend.checklist.service
 
+import com.trippoint.backend.activity.service.ActivityLogService
 import com.trippoint.backend.checklist.entity.Checklist
 import com.trippoint.backend.checklist.entity.ChecklistItem
 import com.trippoint.backend.checklist.entity.ChecklistSection
@@ -26,6 +27,7 @@ class ChecklistServiceTest {
     private lateinit var sectionRepository: ChecklistSectionRepository
     private lateinit var itemRepository: ChecklistItemRepository
     private lateinit var tripAccessService: TripAccessService
+    private lateinit var activityLogService: ActivityLogService
 
     private lateinit var service: ChecklistService
 
@@ -42,12 +44,14 @@ class ChecklistServiceTest {
         sectionRepository = mock()
         itemRepository = mock()
         tripAccessService = mock()
+        activityLogService = mock()
 
         service = ChecklistService(
             checklistRepository = checklistRepository,
             checklistSectionRepository = sectionRepository,
             checklistItemRepository = itemRepository,
-            tripAccessService = tripAccessService
+            tripAccessService = tripAccessService,
+            activityLogService = activityLogService
         )
     }
 
@@ -186,7 +190,8 @@ class ChecklistServiceTest {
             checklistRepository = checklistRepository,
             checklistSectionRepository = sectionRepository,
             checklistItemRepository = itemRepository,
-            tripAccessService = realTripAccessService
+            tripAccessService = realTripAccessService,
+            activityLogService = activityLogService
         )
 
         assertThrows<IllegalAccessException> {

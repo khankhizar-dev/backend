@@ -1,5 +1,7 @@
 package com.trippoint.backend.itinerary.service
 
+import com.trippoint.backend.activity.model.ActivityTarget
+import com.trippoint.backend.activity.service.ActivityLogService
 import com.trippoint.backend.itinerary.entity.ItineraryActivity
 import com.trippoint.backend.itinerary.graphql.ItineraryActivityResponse
 import com.trippoint.backend.itinerary.graphql.input.CreateItineraryActivityInput
@@ -17,7 +19,8 @@ import java.util.UUID
 class ItineraryActivityService(
     private val itineraryActivityRepository: ItineraryActivityRepository,
     private val itineraryDayRepository: ItineraryDayRepository,
-    private val tripAccessService: TripAccessService
+    private val tripAccessService: TripAccessService,
+    private val activityLogService: ActivityLogService
 ) {
 
     @Transactional
@@ -100,9 +103,17 @@ class ItineraryActivityService(
             sortOrder = sortOrder
         )
 
-        return ItineraryActivityResponse.from(
-            itineraryActivityRepository.save(activity)
+        val savedActivity = itineraryActivityRepository.save(activity)
+
+        activityLogService.log(
+            tripId = tripId,
+            userId = userId,
+            action = "created itinerary activity",
+            targetType = ActivityTarget.TASK,
+            targetName = savedActivity.title
         )
+
+        return ItineraryActivityResponse.from(savedActivity)
     }
 
     @Transactional(readOnly = true)
@@ -248,9 +259,17 @@ class ItineraryActivityService(
             activity.completed = it
         }
 
-        return ItineraryActivityResponse.from(
-            itineraryActivityRepository.save(activity)
+        val savedActivity = itineraryActivityRepository.save(activity)
+
+        activityLogService.log(
+            tripId = tripId,
+            userId = userId,
+            action = "updated itinerary activity",
+            targetType = ActivityTarget.TASK,
+            targetName = savedActivity.title
         )
+
+        return ItineraryActivityResponse.from(savedActivity)
     }
 
     @Transactional
@@ -275,6 +294,14 @@ class ItineraryActivityService(
             ?: throw IllegalArgumentException(
                 "Itinerary activity not found"
             )
+
+        activityLogService.log(
+            tripId = tripId,
+            userId = userId,
+            action = "deleted itinerary activity",
+            targetType = ActivityTarget.TASK,
+            targetName = activity.title
+        )
 
         itineraryActivityRepository.delete(activity)
 
@@ -307,9 +334,21 @@ class ItineraryActivityService(
 
         activity.completed = completed
 
-        return ItineraryActivityResponse.from(
-            itineraryActivityRepository.save(activity)
+        val savedActivity = itineraryActivityRepository.save(activity)
+
+        activityLogService.log(
+            tripId = tripId,
+            userId = userId,
+            action = if (completed) {
+                "completed itinerary activity"
+            } else {
+                "uncompleted itinerary activity"
+            },
+            targetType = ActivityTarget.TASK,
+            targetName = savedActivity.title
         )
+
+        return ItineraryActivityResponse.from(savedActivity)
     }
 
     private fun verifyDayAccess(

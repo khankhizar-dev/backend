@@ -1,5 +1,7 @@
 package com.trippoint.backend.checklist.service
 
+import com.trippoint.backend.activity.model.ActivityTarget
+import com.trippoint.backend.activity.service.ActivityLogService
 import com.trippoint.backend.checklist.entity.Checklist
 import com.trippoint.backend.checklist.entity.ChecklistItem
 import com.trippoint.backend.checklist.entity.ChecklistSection
@@ -19,7 +21,8 @@ class ChecklistService(
     private val checklistRepository: ChecklistRepository,
     private val checklistSectionRepository: ChecklistSectionRepository,
     private val checklistItemRepository: ChecklistItemRepository,
-    private val tripAccessService: TripAccessService
+    private val tripAccessService: TripAccessService,
+    private val activityLogService: ActivityLogService
 ) {
 
     // -------------------------------------------------------------------------
@@ -50,7 +53,17 @@ class ChecklistService(
             status = ChecklistStatus.ACTIVE
         )
 
-        return checklistRepository.save(checklist)
+        val savedChecklist = checklistRepository.save(checklist)
+
+        activityLogService.log(
+            tripId = tripId,
+            userId = userId,
+            action = "created checklist",
+            targetType = ActivityTarget.TASK,
+            targetName = savedChecklist.name
+        )
+
+        return savedChecklist
     }
 
     @Transactional(readOnly = true)
@@ -151,7 +164,7 @@ class ChecklistService(
 
         tripAccessService.requireMemberAccess(tripId, userId)
 
-        getActiveChecklist(
+        val checklist = getActiveChecklist(
             tripId = tripId,
             checklistId = checklistId
         )
@@ -301,7 +314,7 @@ class ChecklistService(
 
         tripAccessService.requireMemberAccess(tripId, userId)
 
-        getActiveChecklist(
+        val checklist = getActiveChecklist(
             tripId = tripId,
             checklistId = checklistId
         )
@@ -352,7 +365,7 @@ class ChecklistService(
 
         tripAccessService.requireMemberAccess(tripId, userId)
 
-        getActiveChecklist(
+        val checklist = getActiveChecklist(
             tripId = tripId,
             checklistId = checklistId
         )
@@ -368,7 +381,21 @@ class ChecklistService(
 
         item.completed = completed
 
-        return checklistItemRepository.save(item)
+        val savedItem = checklistItemRepository.save(item)
+
+        activityLogService.log(
+            tripId = tripId,
+            userId = userId,
+            action = if (completed) {
+                "completed checklist item"
+            } else {
+                "uncompleted checklist item"
+            },
+            targetType = ActivityTarget.TASK,
+            targetName = "${checklist.name}: ${savedItem.name}"
+        )
+
+        return savedItem
     }
 
     @Transactional

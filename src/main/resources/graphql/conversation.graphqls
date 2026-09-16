@@ -1,0 +1,64 @@
+enum MessageType {
+    TEXT
+    IMAGE
+    FILE
+    SYSTEM
+}
+
+type ChatAttachment {
+    id: ID!
+    name: String!
+    url: String!
+    mimeType: String!
+    fileSize: Long!
+}
+
+type ChatMessage {
+    id: ID!
+    tripId: ID!
+    senderId: ID!
+    senderName: String!
+    senderPhotoUrl: String
+    content: String!
+    type: MessageType!
+    attachments: [ChatAttachment!]!
+    replyToId: ID
+    replyToContent: String
+    timestamp: String!
+    isMe: Boolean!
+    deleted: Boolean!
+}
+
+input MessagePaginationInput {
+    limit: Int
+    beforeCursor: ID
+}
+
+input SendMessageInput {
+    content: String!
+    type: MessageType!
+    replyToId: ID
+}
+
+extend type Query {
+    messages(
+        tripId: ID!
+        pagination: MessagePaginationInput
+    ): [ChatMessage!]!
+}
+
+extend type Mutation {
+    sendMessage(
+        tripId: ID!
+        input: SendMessageInput!
+    ): ChatMessage!
+
+    deleteMessage(
+        tripId: ID!
+        messageId: ID!
+    ): Boolean!
+}
+
+extend type Subscription {
+    messageReceived(tripId: ID!): ChatMessage
+}

@@ -1,5 +1,6 @@
 package com.trippoint.backend.budget.service
 
+import com.trippoint.backend.activity.service.ActivityLogService
 import com.trippoint.backend.booking.repository.BookingRepository
 import com.trippoint.backend.budget.entity.Budget
 import com.trippoint.backend.budget.entity.Expense
@@ -41,6 +42,7 @@ class ExpenseServiceTest {
     private lateinit var tripMemberRepository: TripMemberRepository
     private lateinit var bookingRepository: BookingRepository
     private lateinit var tripAccessService: TripAccessService
+    private lateinit var activityLogService: ActivityLogService
 
     private lateinit var service: ExpenseService
 
@@ -60,6 +62,7 @@ class ExpenseServiceTest {
         tripMemberRepository = mock()
         bookingRepository = mock()
         tripAccessService = mock()
+        activityLogService = mock()
 
         service = ExpenseService(
             expenseRepository = expenseRepository,
@@ -67,7 +70,8 @@ class ExpenseServiceTest {
             tripRepository = tripRepository,
             tripMemberRepository = tripMemberRepository,
             bookingRepository = bookingRepository,
-            tripAccessService = tripAccessService
+            tripAccessService = tripAccessService,
+            activityLogService = activityLogService
         )
     }
 

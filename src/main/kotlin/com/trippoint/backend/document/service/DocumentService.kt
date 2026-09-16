@@ -1,5 +1,7 @@
 package com.trippoint.backend.document.service
 
+import com.trippoint.backend.activity.model.ActivityTarget
+import com.trippoint.backend.activity.service.ActivityLogService
 import com.trippoint.backend.document.domain.Document
 import com.trippoint.backend.document.domain.DocumentCategory
 import com.trippoint.backend.document.domain.DocumentSource
@@ -18,7 +20,8 @@ import java.util.UUID
 class DocumentService(
     private val documentRepository: DocumentRepository,
     private val documentStorageService: DocumentStorageService,
-    private val tripAccessService: TripAccessService
+    private val tripAccessService: TripAccessService,
+    private val activityLogService: ActivityLogService
 ) {
 
     companion object {
@@ -107,7 +110,17 @@ class DocumentService(
                 favorite = false
             )
 
-            return documentRepository.save(document)
+            val savedDocument = documentRepository.save(document)
+
+            activityLogService.log(
+                tripId = tripId,
+                userId = userId,
+                action = "uploaded document",
+                targetType = ActivityTarget.DOCUMENT,
+                targetName = savedDocument.name
+            )
+
+            return savedDocument
         } catch (exception: Exception) {
             documentStorageService.delete(storageKey)
             throw exception
@@ -205,7 +218,17 @@ class DocumentService(
 
         document.favorite = favorite
 
-        return documentRepository.save(document)
+        val savedDocument = documentRepository.save(document)
+
+        activityLogService.log(
+            tripId = tripId,
+            userId = userId,
+            action = if (favorite) "favorited document" else "unfavorited document",
+            targetType = ActivityTarget.DOCUMENT,
+            targetName = savedDocument.name
+        )
+
+        return savedDocument
     }
 
     @Transactional
@@ -232,7 +255,17 @@ class DocumentService(
 
         document.status = DocumentStatus.TRASHED
 
-        return documentRepository.save(document)
+        val savedDocument = documentRepository.save(document)
+
+        activityLogService.log(
+            tripId = tripId,
+            userId = userId,
+            action = "trashed document",
+            targetType = ActivityTarget.DOCUMENT,
+            targetName = savedDocument.name
+        )
+
+        return savedDocument
     }
 
     @Transactional
@@ -259,7 +292,17 @@ class DocumentService(
 
         document.status = DocumentStatus.ACTIVE
 
-        return documentRepository.save(document)
+        val savedDocument = documentRepository.save(document)
+
+        activityLogService.log(
+            tripId = tripId,
+            userId = userId,
+            action = "restored document",
+            targetType = ActivityTarget.DOCUMENT,
+            targetName = savedDocument.name
+        )
+
+        return savedDocument
     }
 
     @Transactional
@@ -279,6 +322,14 @@ class DocumentService(
         if (document.uploadedBy != userId) {
             tripAccessService.requireOwnerAccess(tripId, userId)
         }
+
+        activityLogService.log(
+            tripId = tripId,
+            userId = userId,
+            action = "permanently deleted document",
+            targetType = ActivityTarget.DOCUMENT,
+            targetName = document.name
+        )
 
         documentStorageService.delete(document.storageKey)
 
@@ -443,6 +494,16 @@ class DocumentService(
             "Expiry date cannot be before issued date"
         }
 
-        return documentRepository.save(document)
+        val savedDocument = documentRepository.save(document)
+
+        activityLogService.log(
+            tripId = tripId,
+            userId = userId,
+            action = "updated document",
+            targetType = ActivityTarget.DOCUMENT,
+            targetName = savedDocument.name
+        )
+
+        return savedDocument
     }
 }

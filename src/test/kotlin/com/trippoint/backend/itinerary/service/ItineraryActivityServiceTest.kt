@@ -1,5 +1,6 @@
 package com.trippoint.backend.itinerary.service
 
+import com.trippoint.backend.activity.service.ActivityLogService
 import com.trippoint.backend.itinerary.entity.ItineraryActivity
 import com.trippoint.backend.itinerary.entity.ItineraryDay
 import com.trippoint.backend.itinerary.graphql.input.CreateItineraryActivityInput
@@ -36,6 +37,7 @@ class ItineraryActivityServiceTest {
     private lateinit var itineraryDayRepository: ItineraryDayRepository
     private lateinit var tripRepository: TripRepository
     private lateinit var tripMemberRepository: TripMemberRepository
+    private lateinit var activityLogService: ActivityLogService
 
     private lateinit var service: ItineraryActivityService
 
@@ -51,6 +53,7 @@ class ItineraryActivityServiceTest {
         itineraryDayRepository = mockk()
         tripRepository = mockk()
         tripMemberRepository = mockk()
+        activityLogService = mockk(relaxed = true)
 
         val tripAccessService = TripAccessService(
             tripRepository = tripRepository,
@@ -60,7 +63,8 @@ class ItineraryActivityServiceTest {
         service = ItineraryActivityService(
             activityRepository,
             itineraryDayRepository,
-            tripAccessService = tripAccessService
+            tripAccessService = tripAccessService,
+            activityLogService = activityLogService
         )
     }
 

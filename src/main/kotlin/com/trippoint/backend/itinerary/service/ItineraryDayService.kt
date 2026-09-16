@@ -1,5 +1,7 @@
 package com.trippoint.backend.itinerary.service
 
+import com.trippoint.backend.activity.model.ActivityTarget
+import com.trippoint.backend.activity.service.ActivityLogService
 import com.trippoint.backend.itinerary.entity.ItineraryDay
 import com.trippoint.backend.itinerary.graphql.ItineraryDayResponse
 import com.trippoint.backend.itinerary.graphql.input.CreateItineraryDayInput
@@ -17,7 +19,8 @@ import java.util.UUID
 class ItineraryDayService(
     private val itineraryDayRepository: ItineraryDayRepository,
     private val tripRepository: TripRepository,
-    private val tripAccessService: TripAccessService
+    private val tripAccessService: TripAccessService,
+    private val activityLogService: ActivityLogService
 ) {
 
     @Transactional
@@ -76,17 +79,25 @@ class ItineraryDayService(
             ?.trim()
             ?.takeIf { it.isNotBlank() }
 
-        return ItineraryDayResponse.from(
-            itineraryDayRepository.save(
-                ItineraryDay(
-                    tripId = tripId,
-                    dayNumber = input.dayNumber,
-                    date = date,
-                    title = title,
-                    notes = notes
-                )
+        val savedDay = itineraryDayRepository.save(
+            ItineraryDay(
+                tripId = tripId,
+                dayNumber = input.dayNumber,
+                date = date,
+                title = title,
+                notes = notes
             )
         )
+
+        activityLogService.log(
+            tripId = tripId,
+            userId = userId,
+            action = "created itinerary day",
+            targetType = ActivityTarget.TASK,
+            targetName = "Day ${savedDay.dayNumber}"
+        )
+
+        return ItineraryDayResponse.from(savedDay)
     }
 
     @Transactional(readOnly = true)
